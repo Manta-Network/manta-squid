@@ -1,5 +1,5 @@
 process: migrate
-	@node -r dotenv/config lib/processor.js
+	@node -r dotenv/config lib/processors/calamariProcessor.js
 
 
 serve:
@@ -22,18 +22,18 @@ codegen:
 	@npx sqd codegen
 
 
-typegen: kusamaVersions.json
+typegen: calamariVersions.json
 	@npx squid-substrate-typegen typegen.json
 
 
-kusamaVersions.json:
+calamariVersions.json:
 	@make explore
 
 
 explore:
 	@npx squid-substrate-metadata-explorer \
-		--chain wss://kusama-rpc.polkadot.io \
-		--archive https://kusama.indexer.gc.subsquid.io/v4/graphql \
+		--chain wss://calamari.api.onfinality.io/public-ws/ \
+		--archive https://calamari.indexer.gc.subsquid.io/v4/graphql \
 		--out kusamaVersions.json
 
 

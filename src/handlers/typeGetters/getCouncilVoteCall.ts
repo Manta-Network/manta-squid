@@ -3,6 +3,7 @@ import { SubstrateNetwork } from '../../model';
 import { CouncilVoteCall as KusamaCouncilVoteCall } from '../../types/kusama/calls';
 import { CouncilVoteCall as PolkadotCouncilVoteCall } from '../../types/polkadot/calls';
 import { CouncilVoteCall as KhalaCouncilVoteCall } from '../../types/polkadot/calls';
+import { CouncilVoteCall as CalamariCouncilVoteCall } from '../../types/calamari/calls';
 
 export function getCouncilVoteCall(
   ctx: ExtrinsicHandlerContext,
@@ -38,6 +39,15 @@ export function getCouncilVoteCall(
 
       if (event.isV0) {
         return event.asV0;
+      } else {
+        return event.asLatest;
+      }
+    }
+    case SubstrateNetwork.calamari: {
+      const event = new CalamariCouncilVoteCall(ctx);
+
+      if (event.isV4) {
+        return event.asV4;
       } else {
         return event.asLatest;
       }

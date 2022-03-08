@@ -3,6 +3,7 @@ import { SubstrateNetwork } from '../../model';
 import { DemocracySecondCall as KusamaDemocracySecondCall } from '../../types/kusama/calls';
 import { DemocracySecondCall as PolkadotDemocracySecondCall } from '../../types/polkadot/calls';
 import { DemocracySecondCall as KhalaDemocracySecondCall } from '../../types/polkadot/calls';
+import { DemocracySecondCall as CalamariDemocracySecondCall } from '../../types/calamari/calls';
 
 export function getDemocracySecondCall(
   ctx: ExtrinsicHandlerContext,
@@ -39,6 +40,16 @@ export function getDemocracySecondCall(
 
       if (event.isV0) {
         return event.asV0;
+      } else {
+        return event.asLatest;
+      }
+    }
+
+    case SubstrateNetwork.calamari: {
+      const event = new CalamariDemocracySecondCall(ctx);
+
+      if (event.isV4) {
+        return event.asV4;
       } else {
         return event.asLatest;
       }

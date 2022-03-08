@@ -3,6 +3,7 @@ import { SubstrateNetwork } from '../../model';
 import { DemocracyVoteCall as KusamaDemocracyVoteCall } from '../../types/kusama/calls';
 import { DemocracyVoteCall as PolkadotDemocracyVoteCall } from '../../types/polkadot/calls';
 import { DemocracyVoteCall as KhalaDemocracyVoteCall } from '../../types/polkadot/calls';
+import { DemocracyVoteCall as CalamariDemocracyVoteCall } from '../../types/calamari/calls';
 
 /*
 TODO: figure out how to interpret votes. Original Kusama votes are just numbers (they appear to always be 0 or 128).
@@ -92,6 +93,16 @@ export function getDemocracyVoteCall(
       }
     }
 
+    case SubstrateNetwork.calamari: {
+      const event = new CalamariDemocracyVoteCall(ctx);
+
+      if (event.isV4) {
+        return event.asV4;
+      } else {
+        return event.asLatest;
+      }
+    }
+
     default: {
       throw new Error('getDemocracyVoteCall::network not supported');
     }
@@ -101,19 +112,19 @@ export function getDemocracyVoteCall(
 function convertLegacyAccountVote(
   data:
     | {
-        __kind: 'Standard';
-        value: {
-          vote: number;
-          balance: bigint;
-        };
-      }
+      __kind: 'Standard';
+      value: {
+        vote: number;
+        balance: bigint;
+      };
+    }
     | {
-        __kind: 'Split';
-        value: {
-          aye: bigint;
-          nay: bigint;
-        };
-      }
+      __kind: 'Split';
+      value: {
+        aye: bigint;
+        nay: bigint;
+      };
+    }
 ): AccountVote {
   if (data.__kind === 'Standard') {
     return {
