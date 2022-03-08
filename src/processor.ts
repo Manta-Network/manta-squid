@@ -9,12 +9,12 @@ import { BalancesTransferEvent } from "./types/events";
 
 const processor = new SubstrateProcessor("kusama_balances");
 
-processor.setTypesBundle("kusama");
+//processor.setTypesBundle("kusama");
 processor.setBatchSize(500);
 
 processor.setDataSource({
-  archive: "https://kusama.indexer.gc.subsquid.io/v4/graphql",
-  chain: "wss://kusama-rpc.polkadot.io",
+  archive: "https://calamari.indexer.gc.subsquid.io/v4/graphql",
+  chain: "wss://calamari.api.onfinality.io/public-ws/",
 });
 
 processor.addEventHandler("balances.Transfer", async (ctx) => {
