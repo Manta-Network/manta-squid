@@ -6,6 +6,8 @@ services:
     environment:
       POSTGRES_DB: postgres
       POSTGRES_PASSWORD: postgres
+    network_mode: host
     ports:
       - "${DB_PORT}:5432"
       # command: ["postgres", "-c", "log_statement=all"]
+      # 
