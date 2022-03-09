@@ -5,7 +5,14 @@
   "events": [
     "balances.Transfer",
     "democracy.Proposed",
-    "democracy.Started"
+    "democracy.Started",
+    "technicalCommittee.Proposed",
+    "technicalCommittee.Voted",
+    "technicalCommittee.Approved",
+    "technicalCommittee.Disapproved",
+    "technicalCommittee.Executed",
+    "technicalCommittee.MemberExecuted",
+    "technicalCommittee.Closed"
   ],
   "calls": [
     "council.vote",

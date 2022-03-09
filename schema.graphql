@@ -7,6 +7,33 @@ enum SubstrateNetwork {
   calamari
 }
 
+enum ProposalState {
+  proposed,
+  voting,
+  approved,
+  enacted,
+  disapproved,
+  closed
+}
+
+type Vote {
+  voter: Account!
+  approve: Boolean!
+}
+
+type SubstrateTechcommProposal @entity {
+  id: ID!  #proposal index
+  proposal: String! #proposal hash
+  proposer: SubstrateGovernanceAccount!
+  introducedAtBlock: BigInt!
+  date: DateTime!
+  threshold: Int!
+  votes: [Vote]
+  state: ProposalState!
+  network: SubstrateNetwork!
+  # totalProposalSeconds: Int!
+}
+
 type SubstrateGovernanceAccount @entity {
   "address"
   id: ID!
@@ -18,6 +45,7 @@ type SubstrateGovernanceAccount @entity {
   totalProposalVotes: Int!
   totalElectionVotes: Int!
   councilVotes: [SubstrateCouncilVote]! @derivedFrom(field: "account")
+  proposalsIntroduced: [SubstrateTechcommProposal]! @derivedFrom(field: "proposer")
   proposalVotes: [SubstrateProposalVote]! @derivedFrom(field: "account")
   proposalSeconds: [SubstrateProposalSecond]! @derivedFrom(field: "account")
   electionVotes: [SubstrateElectionVote]! @derivedFrom(field: "account")

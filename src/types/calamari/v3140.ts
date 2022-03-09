@@ -1,22 +1,8 @@
 import type {Result} from './support'
 
-export type VoteThreshold = VoteThreshold_SuperMajorityApprove | VoteThreshold_SuperMajorityAgainst | VoteThreshold_SimpleMajority
-
-export interface VoteThreshold_SuperMajorityApprove {
-  __kind: 'SuperMajorityApprove'
-}
-
-export interface VoteThreshold_SuperMajorityAgainst {
-  __kind: 'SuperMajorityAgainst'
-}
-
-export interface VoteThreshold_SimpleMajority {
-  __kind: 'SimpleMajority'
-}
-
 export type H256 = Uint8Array
 
-export type DispatchError = DispatchError_Other | DispatchError_CannotLookup | DispatchError_BadOrigin | DispatchError_Module | DispatchError_ConsumerRemaining | DispatchError_NoProviders | DispatchError_Token | DispatchError_Arithmetic
+export type DispatchError = DispatchError_Other | DispatchError_CannotLookup | DispatchError_BadOrigin | DispatchError_Module | DispatchError_ConsumerRemaining | DispatchError_NoProviders | DispatchError_TooManyConsumers | DispatchError_Token | DispatchError_Arithmetic
 
 export interface DispatchError_Other {
   __kind: 'Other'
@@ -44,6 +30,10 @@ export interface DispatchError_NoProviders {
   __kind: 'NoProviders'
 }
 
+export interface DispatchError_TooManyConsumers {
+  __kind: 'TooManyConsumers'
+}
+
 export interface DispatchError_Token {
   __kind: 'Token'
   value: TokenError
@@ -52,22 +42,6 @@ export interface DispatchError_Token {
 export interface DispatchError_Arithmetic {
   __kind: 'Arithmetic'
   value: ArithmeticError
-}
-
-export type AccountId32 = Uint8Array
-
-export type AccountVote = AccountVote_Standard | AccountVote_Split
-
-export interface AccountVote_Standard {
-  __kind: 'Standard'
-  vote: Vote
-  balance: bigint
-}
-
-export interface AccountVote_Split {
-  __kind: 'Split'
-  aye: bigint
-  nay: bigint
 }
 
 export type TokenError = TokenError_NoFunds | TokenError_WouldDie | TokenError_BelowMinimum | TokenError_CannotCreate | TokenError_UnknownAsset | TokenError_Frozen | TokenError_Unsupported
@@ -113,5 +87,3 @@ export interface ArithmeticError_Overflow {
 export interface ArithmeticError_DivisionByZero {
   __kind: 'DivisionByZero'
 }
-
-export type Vote = number
