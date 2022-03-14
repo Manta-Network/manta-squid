@@ -2,9 +2,8 @@ import * as ss58 from "@subsquid/ss58";
 import { SubstrateTechcommProposal, Account, SubstrateNetwork } from "../model";
 import { Store, EventHandlerContext } from '@subsquid/substrate-processor';
 import { TechnicalCommitteeApprovedEvent, TechnicalCommitteeClosedEvent, TechnicalCommitteeDisapprovedEvent, TechnicalCommitteeExecutedEvent, TechnicalCommitteeMemberExecutedEvent, TechnicalCommitteeProposedEvent, TechnicalCommitteeVotedEvent } from "../types/calamari/events";
-import { getOrCreateGovernanceAccount } from "../utils";
+import { getOrCreateGovernanceAccount, getOrCreateProposal } from "../utils";
 import { decodeAddress } from '../utils';
-import { getOrCreateProposal } from "../utils/getOrCreateGovernanceAccount";
 
 export function handleProposalEvents(network: SubstrateNetwork) {
     return async (ctx: EventHandlerContext) => {
@@ -28,23 +27,6 @@ export function handleProposalEvents(network: SubstrateNetwork) {
         console.log("added proposal" + someEvent.proposalId);
 
         await ctx.store.save(proposal);
-        // await ctx.store.save(
-        //     new HistoricalBalance({
-        //         id: `${ctx.event.id}-to`,
-        //         account: fromAcc,
-        //         balance: fromAcc.balance,
-        //         date: new Date(ctx.block.timestamp),
-        //     })
-        // );
-
-        // await ctx.store.save(
-        //     new HistoricalBalance({
-        //         id: `${ctx.event.id}-from`,
-        //         account: toAcc,
-        //         balance: toAcc.balance,
-        //         date: new Date(ctx.block.timestamp),
-        //     })
-        // );
     };
 }
 
