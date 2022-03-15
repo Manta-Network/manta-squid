@@ -1,7 +1,7 @@
 import * as ss58 from "@subsquid/ss58";
-import { Account, HistoricalBalance, SubstrateNetwork } from "../model";
+import { Account, HistoricalBalance, SubstrateNetwork } from "../../model";
 import { Store, EventHandlerContext } from '@subsquid/substrate-processor';
-import { BalancesTransferEvent } from "../types/calamari/events";
+import { BalancesTransferEvent } from "../../types/calamari/events";
 
 export default (network: SubstrateNetwork) =>
     async (ctx: EventHandlerContext) => {

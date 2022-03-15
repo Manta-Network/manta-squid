@@ -4,8 +4,14 @@ import councilVoteHandler from '../handlers/council.vote.extrinsic';
 import democracyVoteHandler from '../handlers/democracy.vote.extrinsic';
 import democracySecondHandler from '../handlers/democracy.second.extrinsic';
 // import electionVoteHandler from '../handlers/phragmenElection.vote.extrinsic';
-import balanceTransferEventHandler from '../handlers/balances.transfer.event';
-import { handleProposalEvents } from '../handlers/collective.*.events';
+import balanceTransferEventHandler from '../handlers/events/balances.transfer.event';
+import { handleProposedEvent } from '../handlers/events/collective.Proposed.event';
+import { handleVotedEvent } from '../handlers/events/collective.Voted.event';
+import { handleApprovedEvent } from "../handlers/events/collective.Approved.event";
+import { handleDisapprovedEvent } from "../handlers/events/collective.Disapproved.event";
+import { handleExecutedEvent } from "../handlers/events/collective.Executed.event";
+import { handleMemberExecutedEvent } from "../handlers/events/collective.MemberExecuted.event";
+import { handleClosedEvent } from "../handlers/events/collective.Closed.event";
 
 const processor = new SubstrateProcessor('manta_calamari_processor');
 
@@ -34,12 +40,12 @@ processor.addExtrinsicHandler(
 );
 
 processor.addEventHandler("balances.Transfer", balanceTransferEventHandler(SubstrateNetwork.calamari));
-processor.addEventHandler("technicalCommittee.Proposed", handleProposalEvents(SubstrateNetwork.calamari));
-// processor.addEventHandler("technicalCommittee.Voted", handleProposalEvents(SubstrateNetwork.calamari));
-// processor.addEventHandler("technicalCommittee.Approved", handleProposalEvents(SubstrateNetwork.calamari));
-// processor.addEventHandler("technicalCommittee.Disapproved", handleProposalEvents(SubstrateNetwork.calamari));
-// processor.addEventHandler("technicalCommittee.Executed", handleProposalEvents(SubstrateNetwork.calamari));
-// processor.addEventHandler("technicalCommittee.MemberExecuted", handleProposalEvents(SubstrateNetwork.calamari));
-// processor.addEventHandler("technicalCommittee.Closed", handleProposalEvents(SubstrateNetwork.calamari));
+processor.addEventHandler("technicalCommittee.Proposed", handleProposedEvent(SubstrateNetwork.calamari));
+processor.addEventHandler("technicalCommittee.Voted", handleVotedEvent(SubstrateNetwork.calamari));
+processor.addEventHandler("technicalCommittee.Approved", handleApprovedEvent(SubstrateNetwork.calamari));
+processor.addEventHandler("technicalCommittee.Disapproved", handleDisapprovedEvent(SubstrateNetwork.calamari));
+processor.addEventHandler("technicalCommittee.Executed", handleExecutedEvent(SubstrateNetwork.calamari));
+processor.addEventHandler("technicalCommittee.MemberExecuted", handleMemberExecutedEvent(SubstrateNetwork.calamari));
+processor.addEventHandler("technicalCommittee.Closed", handleClosedEvent(SubstrateNetwork.calamari));
 
 processor.run();

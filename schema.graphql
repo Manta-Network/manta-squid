@@ -23,7 +23,7 @@ type Vote {
 
 type SubstrateTechcommProposal @entity {
   id: ID!  #proposal index
-  proposal: String! #proposal hash
+  proposal: String! @index #proposal hash
   proposer: SubstrateGovernanceAccount!
   introducedAtBlock: BigInt!
   date: DateTime!

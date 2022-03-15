@@ -1,15 +1,14 @@
 import * as ss58 from "@subsquid/ss58";
-import { SubstrateTechcommProposal, Account, SubstrateNetwork } from "../model";
+import { SubstrateNetwork } from "../../model";
 import { Store, EventHandlerContext } from '@subsquid/substrate-processor';
-import { TechnicalCommitteeApprovedEvent, TechnicalCommitteeClosedEvent, TechnicalCommitteeDisapprovedEvent, TechnicalCommitteeExecutedEvent, TechnicalCommitteeMemberExecutedEvent, TechnicalCommitteeProposedEvent, TechnicalCommitteeVotedEvent } from "../types/calamari/events";
-import { getOrCreateGovernanceAccount, getOrCreateProposal } from "../utils";
-import { decodeAddress } from '../utils';
+import { TechnicalCommitteeProposedEvent } from "../../types/calamari/events";
+import { getOrCreateGovernanceAccount, getOrCreateProposal, decodeAddress } from "../../utils";
 
-export function handleProposalEvents(network: SubstrateNetwork) {
+export function handleProposedEvent(network: SubstrateNetwork) {
     return async (ctx: EventHandlerContext) => {
         const someEvent = getProposedEvent(ctx);
 
-        const authorId = ss58.codec("calamari").encode(someEvent.author);
+        const authorId = ss58.codec(network).encode(someEvent.author);
         const rootAccount = decodeAddress(authorId);
         const authorAcc = await getOrCreateGovernanceAccount(ctx.store, { id: authorId, rootAccount: rootAccount, network: network });
         await ctx.store.save(authorAcc);

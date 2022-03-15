@@ -1,4 +1,4 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, ManyToOne as ManyToOne_, Index as Index_} from "typeorm"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, Index as Index_, ManyToOne as ManyToOne_} from "typeorm"
 import * as marshal from "./marshal"
 import {SubstrateGovernanceAccount} from "./substrateGovernanceAccount.model"
 import {Vote} from "./_vote"
@@ -14,6 +14,7 @@ export class SubstrateTechcommProposal {
   @PrimaryColumn_()
   id!: string
 
+  @Index_()
   @Column_("text", {nullable: false})
   proposal!: string
 
