@@ -1,30 +1,52 @@
 import * as ss58 from "@subsquid/ss58";
-import { SubstrateTechcommProposal, SubstrateNetwork, ProposalState, Vote } from "../../model";
+import { SubstrateTechcommProposal, SubstrateNetwork, ProposalState, SubstrateTechcommVote } from "../../model";
 import { Store, EventHandlerContext } from '@subsquid/substrate-processor';
 import { TechnicalCommitteeVotedEvent } from "../../types/calamari/events";
-import { decodeAddress } from "../../utils";
+import { decodeAddress, getOrCreateGovernanceAccount } from "../../utils";
 
 export function handleVotedEvent(network: SubstrateNetwork) {
     return async (ctx: EventHandlerContext) => {
         const someEvent = getVotedEvent(ctx);
 
+        const propHash = '0x' + Buffer.from(someEvent.proposalHash).toString('hex');
+        const approve = someEvent.is_yes;
+
+        const blockNumber = BigInt(ctx.block.height);
+        const date = new Date(ctx.block.timestamp);
+
         const authorId = ss58.codec(network).encode(someEvent.author);
         const rootAccount = decodeAddress(authorId);
 
         try {
-            let hashString = '0x' + Buffer.from(someEvent.proposalHash).toString('hex');
-            let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: hashString } });
+            const account = await getOrCreateGovernanceAccount(ctx.store, { id: authorId, rootAccount: rootAccount, network: network });
+            await ctx.store.save(account);
+
+            let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: propHash } });
 
             if (proposal.state == ProposalState.proposed) {
                 proposal.state = ProposalState.voting;
-                proposal.votes = [];
             }
 
             if (proposal.state != ProposalState.voting) {
                 throw new Error('invalid proposal state');
             }
-            proposal.votes!.push(new Vote({ voter: authorId, approve: someEvent.is_yes }));
 
+            const vote = new SubstrateTechcommVote({
+                id: `${network}:${blockNumber.toString()}:${ctx.event.indexInBlock}`,
+                network,
+                account,
+                rootAccount,
+                blockNumber,
+                date,
+                proposal,
+                approve,
+            });
+            await ctx.store.save(vote);
+            if (approve) { proposal.ayes += 1; }
+            else {
+                proposal.nays += 1;
+            }
+            proposal.voteCount += 1;
             await ctx.store.save(proposal);
         } catch (e) {
             throw e;

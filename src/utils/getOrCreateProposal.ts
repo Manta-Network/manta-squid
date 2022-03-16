@@ -10,13 +10,16 @@ export async function getOrCreateProposal(
     proposer: SubstrateGovernanceAccount,
     introducedAtBlock: bigint,
     date: Date,
-    threshold: number,
+    voteThreshold: number,
     network: SubstrateNetwork
   }
 ): Promise<SubstrateTechcommProposal> {
   const account = await getOrCreate(store, SubstrateTechcommProposal, {
     ...params,
     state: ProposalState.proposed,
+    ayes: 0,
+    nays: 0,
+    voteCount: 0
   });
 
   return account;

@@ -16,21 +16,20 @@ enum ProposalState {
   closed
 }
 
-type Vote {
-  voter: Account!
-  approve: Boolean!
-}
-
 type SubstrateTechcommProposal @entity {
-  id: ID!  #proposal index
+  "network:proposal_index"
+  id: ID!
   proposal: String! @index #proposal hash
   proposer: SubstrateGovernanceAccount!
   introducedAtBlock: BigInt!
   date: DateTime!
-  threshold: Int!
-  votes: [Vote]
   state: ProposalState!
   network: SubstrateNetwork!
+  ayes: Int!
+  nays: Int!
+  voteCount: Int!
+  voteThreshold: Int!
+  votes: [SubstrateTechcommVote]! @derivedFrom(field: "proposal")
   # totalProposalSeconds: Int!
 }
 
@@ -45,6 +44,7 @@ type SubstrateGovernanceAccount @entity {
   totalProposalVotes: Int!
   totalElectionVotes: Int!
   councilVotes: [SubstrateCouncilVote]! @derivedFrom(field: "account")
+  techcommVotes: [SubstrateTechcommVote]! @derivedFrom(field: "account")
   proposalsIntroduced: [SubstrateTechcommProposal]! @derivedFrom(field: "proposer")
   proposalVotes: [SubstrateProposalVote]! @derivedFrom(field: "account")
   proposalSeconds: [SubstrateProposalSecond]! @derivedFrom(field: "account")
@@ -61,6 +61,18 @@ type SubstrateElectionVote @entity {
   date: DateTime!
   candidates: [String!]!
   amount: BigInt!
+}
+
+type SubstrateTechcommVote @entity {
+  "network:block:index"
+  id: ID!
+  network: SubstrateNetwork!
+  account: SubstrateGovernanceAccount!
+  rootAccount: String! @index
+  blockNumber: BigInt!
+  date: DateTime!
+  proposal: SubstrateTechcommProposal!
+  approve: Boolean!
 }
 
 type SubstrateCouncilVote @entity {

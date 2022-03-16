@@ -1,6 +1,7 @@
 import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, Index as Index_, OneToMany as OneToMany_} from "typeorm"
 import {SubstrateNetwork} from "./_substrateNetwork"
 import {SubstrateCouncilVote} from "./substrateCouncilVote.model"
+import {SubstrateTechcommVote} from "./substrateTechcommVote.model"
 import {SubstrateTechcommProposal} from "./substrateTechcommProposal.model"
 import {SubstrateProposalVote} from "./substrateProposalVote.model"
 import {SubstrateProposalSecond} from "./substrateProposalSecond.model"
@@ -42,6 +43,9 @@ export class SubstrateGovernanceAccount {
 
   @OneToMany_(() => SubstrateCouncilVote, e => e.account)
   councilVotes!: SubstrateCouncilVote[]
+
+  @OneToMany_(() => SubstrateTechcommVote, e => e.account)
+  techcommVotes!: SubstrateTechcommVote[]
 
   @OneToMany_(() => SubstrateTechcommProposal, e => e.proposer)
   proposalsIntroduced!: SubstrateTechcommProposal[]

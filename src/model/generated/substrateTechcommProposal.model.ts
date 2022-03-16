@@ -1,9 +1,9 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, Index as Index_, ManyToOne as ManyToOne_} from "typeorm"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, Index as Index_, ManyToOne as ManyToOne_, OneToMany as OneToMany_} from "typeorm"
 import * as marshal from "./marshal"
 import {SubstrateGovernanceAccount} from "./substrateGovernanceAccount.model"
-import {Vote} from "./_vote"
 import {ProposalState} from "./_proposalState"
 import {SubstrateNetwork} from "./_substrateNetwork"
+import {SubstrateTechcommVote} from "./substrateTechcommVote.model"
 
 @Entity_()
 export class SubstrateTechcommProposal {
@@ -11,6 +11,9 @@ export class SubstrateTechcommProposal {
     Object.assign(this, props)
   }
 
+  /**
+   * network:proposal_index
+   */
   @PrimaryColumn_()
   id!: string
 
@@ -28,15 +31,24 @@ export class SubstrateTechcommProposal {
   @Column_("timestamp with time zone", {nullable: false})
   date!: Date
 
-  @Column_("integer", {nullable: false})
-  threshold!: number
-
-  @Column_("jsonb", {transformer: {to: obj => obj == null ? undefined : obj.map((val: any) => val == null ? undefined : val.toJSON()), from: obj => obj == null ? undefined : marshal.fromList(obj, val => val == null ? undefined : new Vote(undefined, val))}, nullable: true})
-  votes!: (Vote | undefined | null)[] | undefined | null
-
   @Column_("varchar", {length: 11, nullable: false})
   state!: ProposalState
 
   @Column_("varchar", {length: 8, nullable: false})
   network!: SubstrateNetwork
+
+  @Column_("integer", {nullable: false})
+  ayes!: number
+
+  @Column_("integer", {nullable: false})
+  nays!: number
+
+  @Column_("integer", {nullable: false})
+  voteCount!: number
+
+  @Column_("integer", {nullable: false})
+  voteThreshold!: number
+
+  @OneToMany_(() => SubstrateTechcommVote, e => e.proposal)
+  votes!: SubstrateTechcommVote[]
 }

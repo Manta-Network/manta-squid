@@ -19,8 +19,8 @@ export function handleProposedEvent(network: SubstrateNetwork) {
                 proposer: authorAcc,
                 introducedAtBlock: BigInt(ctx.block.height),
                 date: new Date(ctx.block.timestamp),
-                threshold: someEvent.threshold,
-                network: SubstrateNetwork.calamari
+                voteThreshold: someEvent.threshold,
+                network: SubstrateNetwork.calamari,
             }
         );
         console.log("added proposal" + someEvent.proposalId);
