@@ -7,7 +7,8 @@ export function handleClosedEvent(network: SubstrateNetwork) {
         const someEvent = getEvent(ctx);
 
         try {
-            let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: someEvent.proposalHash } });
+            let hashString = '0x' + Buffer.from(someEvent.proposalHash).toString('hex');
+            let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: hashString } });
 
             if (proposal.state != ProposalState.voting) {
                 throw new Error('invalid proposal state');

@@ -8,7 +8,8 @@ export function handleExecutedEvent(network: SubstrateNetwork) {
 
         if (someEvent.successfully_executed) {
             try {
-                let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: someEvent.proposalHash } });
+                let hashString = '0x' + Buffer.from(someEvent.proposalHash).toString('hex');
+                let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: hashString } });
 
                 if (proposal.state == ProposalState.approved) {
                     proposal.state = ProposalState.enacted;
@@ -20,7 +21,8 @@ export function handleExecutedEvent(network: SubstrateNetwork) {
                 throw e;
             }
         } else {
-            throw new Error('Failed execution path not yet implemented'); // TODO
+            // the proposal was not successfully enacted, so it just stays in its previous state
+            // throw new Error('Failed execution path not yet implemented'); // TODO
         }
     };
 }

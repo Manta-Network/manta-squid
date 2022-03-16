@@ -7,10 +7,11 @@ export function handleApprovedEvent(network: SubstrateNetwork) {
         const someEvent = getEvent(ctx);
 
         try {
-            let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: someEvent.proposalHash } });
+            let hashString = '0x' + Buffer.from(someEvent.proposalHash).toString('hex');
+            let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: hashString } });
 
-            if (proposal.state != ProposalState.voting) {
-                throw new Error('invalid proposal state');
+            if (proposal.state != ProposalState.closed) {
+                throw new Error('invalid proposal state: ' + proposal.state);
             }
             proposal.state = ProposalState.approved;
             await ctx.store.save(proposal);

@@ -12,7 +12,8 @@ export function handleVotedEvent(network: SubstrateNetwork) {
         const rootAccount = decodeAddress(authorId);
 
         try {
-            let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: someEvent.proposalHash } });
+            let hashString = '0x' + Buffer.from(someEvent.proposalHash).toString('hex');
+            let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: hashString } });
 
             if (proposal.state == ProposalState.proposed) {
                 proposal.state = ProposalState.voting;

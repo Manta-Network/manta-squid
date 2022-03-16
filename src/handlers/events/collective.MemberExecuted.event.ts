@@ -8,7 +8,8 @@ export function handleMemberExecutedEvent(network: SubstrateNetwork) {
 
         if (someEvent.successfully_executed) {
             try {
-                let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: someEvent.proposalHash } });
+                let hashString = '0x' + Buffer.from(someEvent.proposalHash).toString('hex');
+                let proposal = await ctx.store.findOneOrFail<SubstrateTechcommProposal>(SubstrateTechcommProposal, { where: { proposal: hashString } });
 
                 if (proposal.state == ProposalState.approved) {
                     proposal.state = ProposalState.enacted;
