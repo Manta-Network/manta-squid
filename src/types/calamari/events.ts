@@ -13,7 +13,7 @@ export class BalancesTransferEvent {
    *  Transfer succeeded. \[from, to, value\]
    */
   get isV1(): boolean {
-    return this.ctx._chain.getEventHash('balances.Transfer') === '9611bd6b933331f197e8fa73bac36184681838292120987fec97092ae037d1c8'
+    return this.ctx._chain.getEventHash('balances.Transfer') === 'dad2bcdca357505fa3c7832085d0db53ce6f902bd9f5b52823ee8791d351872c'
   }
 
   /**
@@ -28,7 +28,7 @@ export class BalancesTransferEvent {
    * Transfer succeeded.
    */
   get isV3110(): boolean {
-    return this.ctx._chain.getEventHash('balances.Transfer') === '99bc4786247456e0d4a44373efe405e598bfadfac87a7c41b0a82a91296836c1'
+    return this.ctx._chain.getEventHash('balances.Transfer') === '0ffdf35c495114c2d42a8bf6c241483fd5334ca0198662e14480ad040f1e3a66'
   }
 
   /**
@@ -59,7 +59,7 @@ export class DemocracyProposedEvent {
    * A motion has been proposed by a public account. \[proposal_index, deposit\]
    */
   get isV4(): boolean {
-    return this.ctx._chain.getEventHash('democracy.Proposed') === 'ec9d8411ccb58c13acecb12c4b4103b429f06983b49e7443b80c83975cb484ed'
+    return this.ctx._chain.getEventHash('democracy.Proposed') === 'a0e51e81445baa317309351746e010ed2435e30ff7e53fbb2cf59283f3b9c536'
   }
 
   /**
@@ -74,7 +74,7 @@ export class DemocracyProposedEvent {
    * A motion has been proposed by a public account.
    */
   get isV3110(): boolean {
-    return this.ctx._chain.getEventHash('democracy.Proposed') === '52a3fc64bce50a0f796295d5997106abe75022e8260b5b12503c89b205774e0d'
+    return this.ctx._chain.getEventHash('democracy.Proposed') === '02ae149915d453560f4d12074a380744b3bbb2fe4c235e963f440e2d79243477'
   }
 
   /**
@@ -105,7 +105,7 @@ export class DemocracyStartedEvent {
    * A referendum has begun. \[ref_index, threshold\]
    */
   get isV4(): boolean {
-    return this.ctx._chain.getEventHash('democracy.Started') === '8d2e3ee24efda41975164e8978c8d4bd4db323c948fca6fc2185f7dbd5187279'
+    return this.ctx._chain.getEventHash('democracy.Started') === '31dcae10175d30392db6fc8a872e963baae4bcf3ee28dfd38b1653a0751c031f'
   }
 
   /**
@@ -120,7 +120,7 @@ export class DemocracyStartedEvent {
    * A referendum has begun.
    */
   get isV3110(): boolean {
-    return this.ctx._chain.getEventHash('democracy.Started') === '7eddfd695fafebc9154f63d976aa98302dc7e2a7f64342b386cb0ddf84367abd'
+    return this.ctx._chain.getEventHash('democracy.Started') === '663653944bacc0e562b015a412877b12c32bc62814b673192c550438bf618ab4'
   }
 
   /**
@@ -152,7 +152,7 @@ export class TechnicalCommitteeApprovedEvent {
    * \[proposal_hash\]
    */
   get isV4(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Approved') === '4dcb738dfd74af66592bf0d341fc294420f303748854437f4fb19a25e1e3b969'
+    return this.ctx._chain.getEventHash('technicalCommittee.Approved') === '21ea0c8f2488eafafdea1de92b54cd17d8b1caff525e37616abf0ff93f11531d'
   }
 
   /**
@@ -168,7 +168,7 @@ export class TechnicalCommitteeApprovedEvent {
    * A motion was approved by the required threshold.
    */
   get isV3110(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Approved') === 'eaf32ea95efc256e36465c8e91c12640de467820469adbe62abb99fb96683a1d'
+    return this.ctx._chain.getEventHash('technicalCommittee.Approved') === 'b8668610145a6851ad2d5b7dd4bfc15e29402d9a8558401ab955896007f866a5'
   }
 
   /**
@@ -200,7 +200,7 @@ export class TechnicalCommitteeClosedEvent {
    * \[proposal_hash, yes, no\]
    */
   get isV4(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Closed') === 'cc2a7a195200ff1765156f1e492d2584a29bc752afb3aaa18fb7cfe1e8a666fd'
+    return this.ctx._chain.getEventHash('technicalCommittee.Closed') === '7d509ca6ee36d401f2d5410aa32038550c256cc3ce4b34cdfe1f8adea0e1679c'
   }
 
   /**
@@ -216,7 +216,7 @@ export class TechnicalCommitteeClosedEvent {
    * A proposal was closed because its threshold was reached or after its duration was up.
    */
   get isV3110(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Closed') === '5b4e2a78c65eaf1dc9455f9827c6928d2754177fa61a354615b5ae5ac4335607'
+    return this.ctx._chain.getEventHash('technicalCommittee.Closed') === '084e73926c22836c888c17e49053d3b72e2feaa904b8f0175d21fb5b800542f9'
   }
 
   /**
@@ -248,7 +248,7 @@ export class TechnicalCommitteeDisapprovedEvent {
    * \[proposal_hash\]
    */
   get isV4(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Disapproved') === '31cbd254685f7a5677bbe134ea4e0be1295f228d56b6d660c28cf62bf7302420'
+    return this.ctx._chain.getEventHash('technicalCommittee.Disapproved') === '21ea0c8f2488eafafdea1de92b54cd17d8b1caff525e37616abf0ff93f11531d'
   }
 
   /**
@@ -264,7 +264,7 @@ export class TechnicalCommitteeDisapprovedEvent {
    * A motion was not approved by the required threshold.
    */
   get isV3110(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Disapproved') === '596de332a7071aaafc2578d06c01734ac75eb26956b489e50950ba15a2edba2d'
+    return this.ctx._chain.getEventHash('technicalCommittee.Disapproved') === 'b8668610145a6851ad2d5b7dd4bfc15e29402d9a8558401ab955896007f866a5'
   }
 
   /**
@@ -296,7 +296,7 @@ export class TechnicalCommitteeExecutedEvent {
    * \[proposal_hash, result\]
    */
   get isV4(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Executed') === '22cc7fe5e78223cb056f3fcdb659825eb15569c7b66df7ddc32b89bbbee81dd1'
+    return this.ctx._chain.getEventHash('technicalCommittee.Executed') === '019142f0bd31225b17a5d98473d6ee9928b1e71bb401e1e42248abdb9dca92c7'
   }
 
   /**
@@ -312,7 +312,7 @@ export class TechnicalCommitteeExecutedEvent {
    * A motion was executed; result will be `Ok` if it returned without error.
    */
   get isV3110(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Executed') === '2089bfe6311bd1605ab28185553ed77b7e4fb48785ba141c96708796d378804f'
+    return this.ctx._chain.getEventHash('technicalCommittee.Executed') === '5b848c4d2e38fbfb6752ba650f8662bd0df106f400d22ae305ed497d7574ee03'
   }
 
   /**
@@ -327,7 +327,7 @@ export class TechnicalCommitteeExecutedEvent {
    * A motion was executed; result will be `Ok` if it returned without error.
    */
   get isV3140(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Executed') === 'ba02bc587b6063a34ef8636af23ff0695d6d131bc8a9effebf971eda9bf8f75c'
+    return this.ctx._chain.getEventHash('technicalCommittee.Executed') === '3f97432326c1bc7a1d2b8f8e2b864f870aa8a7a926361a7af32c8e5c45ed9c5e'
   }
 
   /**
@@ -359,7 +359,7 @@ export class TechnicalCommitteeMemberExecutedEvent {
    * \[proposal_hash, result\]
    */
   get isV4(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.MemberExecuted') === '0f7418bf08e9db768b31ed6a0b9b12d1dd2976b0b419bc8e6f9cf7485dcdb6b5'
+    return this.ctx._chain.getEventHash('technicalCommittee.MemberExecuted') === '019142f0bd31225b17a5d98473d6ee9928b1e71bb401e1e42248abdb9dca92c7'
   }
 
   /**
@@ -375,7 +375,7 @@ export class TechnicalCommitteeMemberExecutedEvent {
    * A single member did some action; result will be `Ok` if it returned without error.
    */
   get isV3110(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.MemberExecuted') === '9cec0be7a91dd6d48bc722d555a8c1f2276bca075745fffc87b4a19b1ba57390'
+    return this.ctx._chain.getEventHash('technicalCommittee.MemberExecuted') === '5b848c4d2e38fbfb6752ba650f8662bd0df106f400d22ae305ed497d7574ee03'
   }
 
   /**
@@ -390,7 +390,7 @@ export class TechnicalCommitteeMemberExecutedEvent {
    * A single member did some action; result will be `Ok` if it returned without error.
    */
   get isV3140(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.MemberExecuted') === '91964554c5710a2f7fe422e033bba8edbac65c500f107f916e539da73f9e16bb'
+    return this.ctx._chain.getEventHash('technicalCommittee.MemberExecuted') === '3f97432326c1bc7a1d2b8f8e2b864f870aa8a7a926361a7af32c8e5c45ed9c5e'
   }
 
   /**
@@ -423,7 +423,7 @@ export class TechnicalCommitteeProposedEvent {
    * \[account, proposal_index, proposal_hash, threshold\]
    */
   get isV4(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Proposed') === 'f209c53b3afe8d2d84d5d8d65d1ef647dde6596f8ad2b3910c231e51977b79f5'
+    return this.ctx._chain.getEventHash('technicalCommittee.Proposed') === '8d3dc2ef388c0264b2a1bd5e18788f415f4c08186c50dbbee2c60e61d81cb025'
   }
 
   /**
@@ -441,7 +441,7 @@ export class TechnicalCommitteeProposedEvent {
    * `MemberCount`).
    */
   get isV3110(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Proposed') === '8110914ce14eda5c1cbba9cf0cb58f21301e30594fb2745b78e81993b029f52a'
+    return this.ctx._chain.getEventHash('technicalCommittee.Proposed') === '63978c884e95719fd416c8a38a2ec2ec5a691a58a28349d62b0173643f0d8262'
   }
 
   /**
@@ -475,7 +475,7 @@ export class TechnicalCommitteeVotedEvent {
    * \[account, proposal_hash, voted, yes, no\]
    */
   get isV4(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Voted') === 'e342c353e880d9dbefcb0608651534806335f848957fea9a305b3b3bc5aeb390'
+    return this.ctx._chain.getEventHash('technicalCommittee.Voted') === '5693223b18444daea47c5d959a8026ce5084d3e9c76fe5a2be5ef93f3526e0ac'
   }
 
   /**
@@ -493,7 +493,7 @@ export class TechnicalCommitteeVotedEvent {
    * a tally (yes votes and no votes given respectively as `MemberCount`).
    */
   get isV3110(): boolean {
-    return this.ctx._chain.getEventHash('technicalCommittee.Voted') === '99064999c2820a12eda1075f1f5be372a6fad9c8f7eb7887365f14ed45d7d390'
+    return this.ctx._chain.getEventHash('technicalCommittee.Voted') === 'b69e97272b7c060192bbc1a5e91692b0a8b905727af6d9eb5627b7857ede0846'
   }
 
   /**

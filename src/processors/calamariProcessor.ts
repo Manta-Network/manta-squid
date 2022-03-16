@@ -12,10 +12,12 @@ import { handleDisapprovedEvent } from "../handlers/events/collective.Disapprove
 import { handleExecutedEvent } from "../handlers/events/collective.Executed.event";
 import { handleMemberExecutedEvent } from "../handlers/events/collective.MemberExecuted.event";
 import { handleClosedEvent } from "../handlers/events/collective.Closed.event";
+import { bundle } from "../chain-metadata/calamari/calamari"
+// import { SystemAccountStorage } from "../types/calamari/storage"
+import * as ss58 from "@subsquid/ss58";
 
 const processor = new SubstrateProcessor('manta_calamari_processor');
-
-// processor.setTypesBundle('khala');
+processor.setTypesBundle(bundle);
 processor.setBatchSize(500);
 processor.setIsolationLevel('REPEATABLE READ');
 processor.setDataSource({
@@ -47,5 +49,15 @@ processor.addEventHandler("technicalCommittee.Disapproved", handleDisapprovedEve
 processor.addEventHandler("technicalCommittee.Executed", handleExecutedEvent(SubstrateNetwork.calamari));
 processor.addEventHandler("technicalCommittee.MemberExecuted", handleMemberExecutedEvent(SubstrateNetwork.calamari));
 processor.addEventHandler("technicalCommittee.Closed", handleClosedEvent(SubstrateNetwork.calamari));
+
+/*processor.addPreHook({ range: { from: 0, to: 0 } }, async ctx => {
+  let accounts = new SystemAccountStorage(ctx)
+  let aliceAddress = ss58.decode('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY').bytes
+  let aliceAccount = await accounts.getAsV3010(aliceAddress)
+  // if (!(aliceAccount.data.free > 0)) {
+  console.log("Alice balance:" + aliceAccount.data.free);
+  // }
+});
+*/
 
 processor.run();

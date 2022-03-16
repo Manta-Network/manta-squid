@@ -1,6 +1,6 @@
 {
   "outDir": "src/types/calamari",
-  "chainVersions": "calamariVersions.json",
+  "chainVersions": "src/chain-metadata/calamari/calamariVersions.json",
   "typesBundle": "kusama",
   "events": [
     "balances.Transfer",
@@ -18,5 +18,8 @@
     "council.vote",
     "democracy.second",
     "democracy.vote"
+  ],
+  "storage": [
+    "Session.CurrentIndex"
   ]
 }

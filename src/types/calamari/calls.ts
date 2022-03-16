@@ -25,7 +25,7 @@ export class CouncilVoteCall {
    * # </weight>
    */
   get isV4(): boolean {
-    return this.ctx._chain.getCallHash('council.vote') === '89a6cc1af1492447ed05b72b49a416cd0bbde7d6f390ca281ad54d3e2e69c256'
+    return this.ctx._chain.getCallHash('council.vote') === 'f8a1069a57f7b721f47c086d08b6838ae1a0c08f58caddb82428ba5f1407540f'
   }
 
   /**
@@ -79,7 +79,7 @@ export class DemocracySecondCall {
    * Weight: `O(S)` where S is the number of seconds a proposal already has.
    */
   get isV4(): boolean {
-    return this.ctx._chain.getCallHash('democracy.second') === 'c388fcd4c5b27ad8d3d1c706339f03968568c8a0f44b0114f86f00e55195abec'
+    return this.ctx._chain.getCallHash('democracy.second') === 'abe1357aae784eefd21f6999076deb6cfbc92fcb9e80c21e93a944ceb739423c'
   }
 
   /**
@@ -127,7 +127,7 @@ export class DemocracyVoteCall {
    * Weight: `O(R)` where R is the number of referendums the voter has voted on.
    */
   get isV4(): boolean {
-    return this.ctx._chain.getCallHash('democracy.vote') === '0efe1fcbb98d2fc487ae2000c67d643ca2393fcf25703010de5a67225e5a4ecd'
+    return this.ctx._chain.getCallHash('democracy.vote') === '3936a4cb49f77280bd94142d4ec458afcf5cb8a5e5b0d602b1b1530928021e28'
   }
 
   /**

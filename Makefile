@@ -22,11 +22,11 @@ codegen:
 	@npx sqd codegen
 
 
-typegen: calamariVersions.json
+typegen: src/chain-metadata/calamari/calamariVersions.json
 	@npx squid-substrate-typegen typegen.json
 
 
-calamariVersions.json:
+src/chain-metadata/calamari/calamariVersions.json:
 	@make explore
 
 
@@ -34,7 +34,7 @@ explore:
 	@npx squid-substrate-metadata-explorer \
 		--chain wss://calamari.api.onfinality.io/public-ws/ \
 		--archive https://calamari.indexer.gc.subsquid.io/v4/graphql \
-		--out kusamaVersions.json
+		--out src/chain-metadata/calamari/calamariVersions.json
 
 
 up:
