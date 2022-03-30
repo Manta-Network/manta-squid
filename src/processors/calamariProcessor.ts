@@ -14,7 +14,6 @@ import { handleExecutedEvent } from "../handlers/events/collective.Executed.even
 import { handleMemberExecutedEvent } from "../handlers/events/collective.MemberExecuted.event";
 import { handleClosedEvent } from "../handlers/events/collective.Closed.event";
 import { handleNewSessionEvent } from "../handlers/events/session.newSession.event";
-import { bundle } from "../chain-metadata/calamari/calamari"
 // import { SystemAccountStorage } from "../types/calamari/storage"
 import { SessionCurrentIndexStorage, SessionValidatorsStorage } from "../types/calamari/storage"
 import * as ss58 from "@subsquid/ss58";
@@ -22,7 +21,7 @@ import { BlockList } from "net";
 import { decodeAddress } from "../utils";
 
 const processor = new SubstrateProcessor('manta_calamari_processor');
-processor.setTypesBundle(bundle);
+processor.setTypesBundle("calamari");
 processor.setBatchSize(500);
 processor.setBlockRange({ from: 999999 }); // skip early calamari history
 processor.setDataSource({

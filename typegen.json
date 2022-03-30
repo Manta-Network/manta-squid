@@ -1,7 +1,7 @@
 {
   "outDir": "src/types/calamari",
   "chainVersions": "src/chain-metadata/calamari/calamariVersions.json",
-  "typesBundle": "src/chain-metadata/calamari/calamari.json",
+  "typesBundle": "calamari",
   "events": [
     "balances.Transfer",
     "democracy.Proposed",
