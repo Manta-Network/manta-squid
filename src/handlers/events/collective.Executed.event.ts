@@ -40,8 +40,12 @@ function getEvent(ctx: EventHandlerContext): Event {
         return { proposalHash, successfully_executed: is_ok };
     }
     else if (event.isV3110) {
-        //   {proposalHash: v3110.H256, result: Result<null, v3110.DispatchError>} {
         const { proposalHash, result } = event.asV3110;
+        let is_ok = result.__kind == "Ok";
+        return { proposalHash, successfully_executed: is_ok };
+    }
+    else if (event.isV3140) {
+        const { proposalHash, result } = event.asV3140;
         let is_ok = result.__kind == "Ok";
         return { proposalHash, successfully_executed: is_ok };
     }
