@@ -1,4 +1,5 @@
 import { SubstrateProcessor } from '@subsquid/substrate-processor';
+import { lookupArchive } from "@subsquid/archive-registry";
 import councilVoteHandler from '../handlers/council.vote.extrinsic';
 import democracyVoteHandler from '../handlers/democracy.vote.extrinsic';
 import democracySecondHandler from '../handlers/democracy.second.extrinsic';
@@ -7,12 +8,10 @@ import { SubstrateNetwork } from '../model';
 
 const processor = new SubstrateProcessor('litentry_squid_governance_kusama');
 
-processor.setTypesBundle('kusama');
 processor.setBatchSize(500);
-processor.setIsolationLevel('REPEATABLE READ');
 processor.setDataSource({
-  archive: 'https://kusama.indexer.gc.subsquid.io/v4/graphql',
-  chain: 'wss://kusama.api.onfinality.io/public-ws',
+  archive: lookupArchive("kusama")[0].url,
+  chain: "wss://kusama-rpc.polkadot.io",
 });
 processor.addExtrinsicHandler(
   'phragmenElection.vote',

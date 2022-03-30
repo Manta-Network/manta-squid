@@ -1,4 +1,5 @@
 import { SubstrateProcessor } from '@subsquid/substrate-processor';
+import { lookupArchive } from "@subsquid/archive-registry";
 import councilVoteHandler from '../handlers/council.vote.extrinsic';
 import democracyVoteHandler from '../handlers/democracy.vote.extrinsic';
 import democracySecondHandler from '../handlers/democracy.second.extrinsic';
@@ -9,9 +10,8 @@ const processor = new SubstrateProcessor('litentry_squid_governance_khala');
 
 processor.setTypesBundle('khala');
 processor.setBatchSize(500);
-processor.setIsolationLevel('REPEATABLE READ');
 processor.setDataSource({
-  archive: 'https://khala-squid-archive.litentry.io/graphql/v1/graphql',
+  archive: lookupArchive("khala")[0].url,
   chain: 'wss://khala.api.onfinality.io/public-ws',
 });
 processor.addExtrinsicHandler(

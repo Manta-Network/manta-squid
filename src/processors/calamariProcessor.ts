@@ -1,4 +1,5 @@
 import { SubstrateProcessor } from "@subsquid/substrate-processor";
+import { lookupArchive } from "@subsquid/archive-registry";
 import { SubstrateNetwork } from "../model";
 import councilVoteHandler from '../handlers/council.vote.extrinsic';
 import democracyVoteHandler from '../handlers/democracy.vote.extrinsic';
@@ -19,9 +20,8 @@ import * as ss58 from "@subsquid/ss58";
 const processor = new SubstrateProcessor('manta_calamari_processor');
 processor.setTypesBundle(bundle);
 processor.setBatchSize(500);
-processor.setIsolationLevel('REPEATABLE READ');
 processor.setDataSource({
-  archive: "https://calamari.indexer.gc.subsquid.io/v4/graphql",
+  archive: lookupArchive("calamari")[0].url,
   chain: "wss://calamari.api.onfinality.io/public-ws/",
 });
 // processor.addExtrinsicHandler(

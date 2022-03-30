@@ -77,5 +77,5 @@ async function getOrCreate<T extends { id: string }>(
 }
 
 type EntityConstructor<T> = {
-    new(...args: any[]): T;
+  new (...args: any[]): T;
 };
