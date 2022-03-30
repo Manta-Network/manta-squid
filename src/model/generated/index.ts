@@ -1,3 +1,5 @@
+export * from "./block.model"
+export * from "./session.model"
 export * from "./substrateTechcommProposal.model"
 export * from "./_proposalState"
 export * from "./_substrateNetwork"

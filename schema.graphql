@@ -7,6 +7,16 @@ enum SubstrateNetwork {
   calamari
 }
 
+type Block @entity {
+  "network:blockNumber"
+  id: ID!
+  network: String!
+  date: DateTime!
+  # timeSinceLastBlock: Int!
+  authorAddressSS58: String!
+  partOfSession: Session!
+}
+
 enum ProposalState {
   proposed,
   voting,
@@ -16,9 +26,30 @@ enum ProposalState {
   closed
 }
 
+type Session @entity{
+  "network:session_index"
+  id: ID!
+  type: String!
+  network: String!
+  sessionIndex: Int!
+  startedAt: DateTime!
+  endedAt: DateTime
+  blocks: [Block]! @derivedFrom(field: "partOfSession")
+  activeValidators: [String]!
+}
+
+# type SubstrateTechnicalCommittee @entity {
+#   "network:???"
+#   id: ID!
+#   members: [SubstrateGovernanceAccount]
+#   memberCount: Int!
+#   proposals: [SubstrateTechcommProposal]! @derivedFrom(field: "council")
+# }
+
 type SubstrateTechcommProposal @entity {
   "network:proposal_index"
   id: ID!
+  # council: SubstrateTechnicalCommittee!
   proposal: String! @index #proposal hash
   proposer: SubstrateGovernanceAccount!
   introducedAtBlock: BigInt!

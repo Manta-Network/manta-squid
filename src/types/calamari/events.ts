@@ -142,6 +142,56 @@ export class DemocracyStartedEvent {
   }
 }
 
+export class SessionNewSessionEvent {
+  constructor(private ctx: EventContext) {
+    assert(this.ctx.event.name === 'session.NewSession')
+  }
+
+  /**
+   *  New session has happened. Note that the argument is the \[session_index\], not the block
+   *  number as the type might suggest.
+   */
+  get isV1(): boolean {
+    return this.ctx._chain.getEventHash('session.NewSession') === '0a0f30b1ade5af5fade6413c605719d59be71340cf4884f65ee9858eb1c38f6c'
+  }
+
+  /**
+   *  New session has happened. Note that the argument is the \[session_index\], not the block
+   *  number as the type might suggest.
+   */
+  get asV1(): number {
+    assert(this.isV1)
+    return this.ctx._chain.decodeEvent(this.ctx.event)
+  }
+
+  /**
+   * New session has happened. Note that the argument is the session index, not the
+   * block number as the type might suggest.
+   */
+  get isV3110(): boolean {
+    return this.ctx._chain.getEventHash('session.NewSession') === '75fa09d2d8b5fbcbe4f75feb6c886998092453010ae364a5b06b9bb6319f1086'
+  }
+
+  /**
+   * New session has happened. Note that the argument is the session index, not the
+   * block number as the type might suggest.
+   */
+  get asV3110(): {sessionIndex: number} {
+    assert(this.isV3110)
+    return this.ctx._chain.decodeEvent(this.ctx.event)
+  }
+
+  get isLatest(): boolean {
+    deprecateLatest()
+    return this.isV3110
+  }
+
+  get asLatest(): {sessionIndex: number} {
+    deprecateLatest()
+    return this.asV3110
+  }
+}
+
 export class TechnicalCommitteeApprovedEvent {
   constructor(private ctx: EventContext) {
     assert(this.ctx.event.name === 'technicalCommittee.Approved')

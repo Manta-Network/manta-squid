@@ -26,3 +26,29 @@ export class SessionCurrentIndexStorage {
     return this.ctx._chain.getStorageItemTypeHash('Session', 'CurrentIndex') != null
   }
 }
+
+export class SessionValidatorsStorage {
+  constructor(private ctx: StorageContext) {}
+
+  /**
+   *  The current set of validators.
+   */
+  get isV1() {
+    return this.ctx._chain.getStorageItemTypeHash('Session', 'Validators') === 'f5df25eadcdffaa0d2a68b199d671d3921ca36a7b70d22d57506dca52b4b5895'
+  }
+
+  /**
+   *  The current set of validators.
+   */
+  async getAsV1(): Promise<Uint8Array[]> {
+    assert(this.isV1)
+    return this.ctx._chain.getStorage(this.ctx.block.hash, 'Session', 'Validators')
+  }
+
+  /**
+   * Checks whether the storage item is defined for the current chain version.
+   */
+  get isExists(): boolean {
+    return this.ctx._chain.getStorageItemTypeHash('Session', 'Validators') != null
+  }
+}

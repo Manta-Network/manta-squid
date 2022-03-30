@@ -1,0 +1,26 @@
+{
+    "types": {},
+    "typesAlias": {},
+    "versions": [
+        {
+            "minmax": [
+                null,
+                null
+            ],
+            "types": {
+                "AccountInfo": "AccountInfoWithDualRefCount",
+                "Address": "AccountId",
+                "AddressInfo": "Vec<u8>",
+                "LookupSource": "AccountId",
+                "CurrencyId": {
+                    "_enum": [
+                        "KMA"
+                    ]
+                },
+                "CurrencyIdOf": "CurrencyId",
+                "Amount": "i128",
+                "AmountOf": "Amount"
+            }
+        }
+    ]
+}

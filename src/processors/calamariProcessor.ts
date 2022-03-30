@@ -1,6 +1,6 @@
 import { SubstrateProcessor } from "@subsquid/substrate-processor";
 import { lookupArchive } from "@subsquid/archive-registry";
-import { SubstrateNetwork } from "../model";
+import { SubstrateNetwork, Session, Block } from "../model";
 import councilVoteHandler from '../handlers/council.vote.extrinsic';
 import democracyVoteHandler from '../handlers/democracy.vote.extrinsic';
 import democracySecondHandler from '../handlers/democracy.second.extrinsic';
@@ -13,13 +13,18 @@ import { handleDisapprovedEvent } from "../handlers/events/collective.Disapprove
 import { handleExecutedEvent } from "../handlers/events/collective.Executed.event";
 import { handleMemberExecutedEvent } from "../handlers/events/collective.MemberExecuted.event";
 import { handleClosedEvent } from "../handlers/events/collective.Closed.event";
+import { handleNewSessionEvent } from "../handlers/events/session.newSession.event";
 import { bundle } from "../chain-metadata/calamari/calamari"
 // import { SystemAccountStorage } from "../types/calamari/storage"
+import { SessionCurrentIndexStorage, SessionValidatorsStorage } from "../types/calamari/storage"
 import * as ss58 from "@subsquid/ss58";
+import { BlockList } from "net";
+import { decodeAddress } from "../utils";
 
 const processor = new SubstrateProcessor('manta_calamari_processor');
 processor.setTypesBundle(bundle);
 processor.setBatchSize(500);
+processor.setBlockRange({ from: 999999 }); // skip early calamari history
 processor.setDataSource({
   archive: lookupArchive("calamari")[0].url,
   chain: "wss://calamari.api.onfinality.io/public-ws/",
@@ -49,15 +54,58 @@ processor.addEventHandler("technicalCommittee.Disapproved", handleDisapprovedEve
 processor.addEventHandler("technicalCommittee.Executed", handleExecutedEvent(SubstrateNetwork.calamari));
 processor.addEventHandler("technicalCommittee.MemberExecuted", handleMemberExecutedEvent(SubstrateNetwork.calamari));
 processor.addEventHandler("technicalCommittee.Closed", handleClosedEvent(SubstrateNetwork.calamari));
+processor.addEventHandler("session.newSession", handleNewSessionEvent(SubstrateNetwork.calamari));
 
-/*processor.addPreHook({ range: { from: 0, to: 0 } }, async ctx => {
-  let accounts = new SystemAccountStorage(ctx)
-  let aliceAddress = ss58.decode('5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY').bytes
-  let aliceAccount = await accounts.getAsV3010(aliceAddress)
-  // if (!(aliceAccount.data.free > 0)) {
-  console.log("Alice balance:" + aliceAccount.data.free);
-  // }
+processor.addPostHook(async ctx => {
+  let network = "calamari"; // TODO: adapt to other networks
+
+  let sessionIndexStorage = new SessionCurrentIndexStorage(ctx);
+  if (!sessionIndexStorage.isV1) {
+    throw new Error("session.currentIndex > V1 unimplemented");
+  }
+  let sessionIndex = await sessionIndexStorage.getAsV1();
+
+  // Ensure we have a session to add src/processors/calamariProcessor.ts:68:12the block to
+  let current_session = await ctx.store.findOneOrFail<Session>(Session, { where: { network: network, sessionIndex: sessionIndex } })
+    .catch(async () => {
+      // This should only occur at the genesis block, other session objects are created in the newSession event handler
+      console.warn("Session index" + sessionIndex + " did not exist for chain " + network + ". Creating at block " + ctx.block.height);
+
+      let validatorsStorage = new SessionValidatorsStorage(ctx);
+      if (!validatorsStorage.isV1) {
+        throw new Error("session.validators > V1 unimplemented");
+      }
+      let validatorAddressByteArray = await validatorsStorage.getAsV1();
+      let validatorAddressStringArray: string[] = [];
+      for (let address_as_bytevec of validatorAddressByteArray) {
+        let hashString = '0x' + Buffer.from(address_as_bytevec).toString('hex');
+        validatorAddressStringArray.push(hashString);
+      }
+      let sess = new Session({
+        id: network + sessionIndex,
+        type: "aura",
+        network: network,
+        sessionIndex: sessionIndex,
+        startedAt: new Date(ctx.block.timestamp),
+        activeValidators: validatorAddressStringArray
+      });
+      ctx.store.save(sess);
+      return sess;
+    });
+
+  // Add this block to the currently active session and commit to DB
+  let blocknumber = ctx.block.height;
+  let author = ctx.block.validatorId;
+  let date = ctx.block.timestamp;
+
+  let block = new Block({
+    id: network + blocknumber,
+    network: network,
+    date: new Date(date),
+    authorAddressSS58: author,
+    partOfSession: current_session!
+  });
+  ctx.store.save(block);
 });
-*/
 
 processor.run();
