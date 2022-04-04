@@ -4,10 +4,13 @@ services:
   db:
     image: postgres:12
     environment:
-      POSTGRES_DB: squid
-      POSTGRES_PASSWORD: squid
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
     network_mode: host
-    ports:
-      - "${DB_PORT}:5432"
-      # command: ["postgres", "-c", "log_statement=all"]
-      # 
+      # ports:
+      #      - "${DB_PORT}:5432"
+    volumes:
+      - "postgresdata:/var/lib/postgresql/data"
+
+volumes:
+  postgresdata:
