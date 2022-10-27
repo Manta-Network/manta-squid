@@ -1,21 +1,37 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToMany as OneToMany_} from "typeorm"
-import {Transfer} from "./transfer.model"
+import {
+  Entity as Entity_,
+  Column as Column_,
+  PrimaryColumn as PrimaryColumn_,
+} from "typeorm";
+import * as marshal from "./marshal";
 
 @Entity_()
 export class Account {
   constructor(props?: Partial<Account>) {
-    Object.assign(this, props)
+    Object.assign(this, props);
   }
 
-  /**
-   * Account address
-   */
   @PrimaryColumn_()
-  id!: string
+  id!: string;
 
-  @OneToMany_(() => Transfer, e => e.to)
-  transfersTo!: Transfer[]
+  @Column_("numeric", {
+    transformer: marshal.bigintTransformer,
+    nullable: false,
+  })
+  free!: bigint;
 
-  @OneToMany_(() => Transfer, e => e.from)
-  transfersFrom!: Transfer[]
+  @Column_("numeric", {
+    transformer: marshal.bigintTransformer,
+    nullable: false,
+  })
+  reserved!: bigint;
+
+  @Column_("numeric", {
+    transformer: marshal.bigintTransformer,
+    nullable: false,
+  })
+  total!: bigint;
+
+  @Column_("int4", { nullable: true })
+  updatedAt!: number | undefined | null;
 }

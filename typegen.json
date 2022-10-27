@@ -1,11 +1,17 @@
 {
-  "outDir": "src/types",
-  "specVersions": "https://kusama.archive.subsquid.io/graphql",
+  "outDir": "src/types/generated",
+  "specVersions": "https://calamari.archive.subsquid.io/graphql",
   "events": [
-    "Balances.Transfer"
+    "Balances.Transfer",
+    "Balances.Endowed",
+    "Balances.BalanceSet",
+    "Balances.Reserved",
+    "Balances.Unreserved",
+    "Balances.ReserveRepatriated",
+    "Balances.Deposit",
+    "Balances.Withdraw",
+    "Balances.Slashed"
   ],
-  "calls": [ 
-  ],
-  "storage": [
-  ]
+  "calls": [],
+  "storage": ["System.Account", "Balances.TotalIssuance"]
 }
