@@ -1,11 +1,11 @@
-import type { Result } from "./support";
+import type {Result} from './support'
 
-export type BalanceStatus = BalanceStatus_Free | BalanceStatus_Reserved;
+export type BalanceStatus = BalanceStatus_Free | BalanceStatus_Reserved
 
 export interface BalanceStatus_Free {
-  __kind: "Free";
+  __kind: 'Free'
 }
 
 export interface BalanceStatus_Reserved {
-  __kind: "Reserved";
+  __kind: 'Reserved'
 }
