@@ -34,7 +34,7 @@ const processor = new SubstrateBatchProcessor()
     chain: "wss://salad.calamari.systems",
   })
   // Decoding fails at 275_910-275_940, due to metadata V13, tranfers are only from multisig upgrade of wasm runtime (Not super important)
-  .setBlockRange({ from: 2_360_000 })
+  .setBlockRange({ from: 275_941 })
   .addEvent("Balances.Endowed", {
     data: { event: { args: true } },
   } as const)
