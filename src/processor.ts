@@ -10,7 +10,7 @@ import {
   toHex,
 } from "@subsquid/substrate-processor";
 import { Store, TypeormDatabase } from "@subsquid/typeorm-store";
-import { Account } from "./model";
+import { Account, ChainState } from "./model";
 import {
   BalancesBalanceSetEvent,
   BalancesDepositEvent,
@@ -34,7 +34,7 @@ const processor = new SubstrateBatchProcessor()
     chain: "wss://salad.calamari.systems",
   })
   // Decoding fails at 275_910-275_940, due to metadata V13, tranfers are only from multisig upgrade of wasm runtime (Not super important)
-  .setBlockRange({ from: 275_940 })
+  .setBlockRange({ from: 2_360_000 })
   .addEvent("Balances.Endowed", {
     data: { event: { args: true } },
   } as const)
@@ -68,6 +68,20 @@ type Item = BatchProcessorItem<typeof processor>;
 type EventItem = BatchProcessorEventItem<typeof processor>;
 type Context = BatchContext<Store, Item>;
 
+// Save period for data points
+// 1 hours
+const SAVE_PERIOD = 2 * 60 * 60 * 1000;
+let lastStateTimestamp: number | undefined;
+
+async function getLastChainState(store: Store) {
+  return await store.get(ChainState, {
+    where: {},
+    order: {
+      timestamp: "DESC",
+    },
+  });
+}
+
 processor.run(new TypeormDatabase(), processBalances);
 
 async function processBalances(ctx: Context): Promise<void> {
@@ -78,13 +92,28 @@ async function processBalances(ctx: Context): Promise<void> {
       if (item.kind == "event") {
         processBalancesEventItem(ctx, item, accountIdsHex);
       }
+
+      if (lastStateTimestamp == null) {
+        lastStateTimestamp =
+          (await getLastChainState(ctx.store))?.timestamp.getTime() || 0;
+      }
+
+      if (block.header.timestamp - lastStateTimestamp >= SAVE_PERIOD) {
+        const accountIdsU8 = [...accountIdsHex].map((id) => decodeHex(id));
+
+        await saveAccounts(ctx, block.header, accountIdsU8);
+        await saveRegularChainState(ctx, block.header, true);
+
+        lastStateTimestamp = block.header.timestamp;
+        accountIdsHex.clear();
+      }
     }
   }
 
   const block = ctx.blocks[ctx.blocks.length - 1];
   const accountIdsU8 = [...accountIdsHex].map((id) => decodeHex(id));
 
-  await saveRegularChainState(ctx, block.header);
+  await saveRegularChainState(ctx, block.header, false);
   await saveAccounts(ctx, block.header, accountIdsU8);
 }
 

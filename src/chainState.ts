@@ -7,9 +7,16 @@ import { Block, ChainContext } from "./types/generated/support";
 
 export async function getChainState(
   ctx: BatchContext<Store, unknown>,
-  block: SubstrateBlock
+  block: SubstrateBlock,
+  isSave: boolean
 ) {
-  const state = new ChainState({ id: block.id });
+  let state = new ChainState();
+
+  if (isSave) {
+    state = new ChainState({ id: block.id });
+  } else {
+    state = new ChainState({ id: "0" });
+  }
 
   state.timestamp = new Date(block.timestamp);
   state.blockNumber = block.height;
@@ -22,12 +29,15 @@ export async function getChainState(
 
 export async function saveRegularChainState(
   ctx: BatchContext<Store, unknown>,
-  block: SubstrateBlock
+  block: SubstrateBlock,
+  isSave: boolean
 ) {
-  const state = await getChainState(ctx, block);
-  await ctx.store.insert(state);
+  const state = await getChainState(ctx, block, isSave);
+  await ctx.store.save(state);
 
-  ctx.log.child("state").info(`updated at block ${block.height}`);
+  if (isSave) {
+    ctx.log.child("state").info(`updated at block ${block.height}`);
+  }
 }
 
 async function getTotalIssuance(ctx: ChainContext, block: Block) {
