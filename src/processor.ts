@@ -27,7 +27,6 @@ import { SystemAccountStorage } from "./types/generated/storage";
 import { saveRegularChainState } from "./chainState";
 
 const processor = new SubstrateBatchProcessor()
-  .setBatchSize(500)
   .setDataSource({
     // Lookup archive by the network name in the Subsquid registry
     archive: lookupArchive("calamari", { release: "FireSquid" }),
