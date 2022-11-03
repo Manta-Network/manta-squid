@@ -1,0 +1,11 @@
+node_modules
+.github
+assets
+db
+lib
+scripts
+archive
+FAQ.md
+README.md
+src/model
+src/types

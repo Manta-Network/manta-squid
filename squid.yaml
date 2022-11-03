@@ -1,11 +1,11 @@
 manifestVersion: subsquid.io/v0.1
 namespace: squid
 
-name: balances-batch-dzlzv
+name: staking-squid
 description: |-
   The very first squid from manifest
 tags:
-  - balances
+  - staking
 
 database:
   type: pg-14

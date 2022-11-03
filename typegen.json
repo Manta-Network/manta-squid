@@ -1,11 +1,38 @@
 {
   "outDir": "src/types",
-  "specVersions": "https://kusama.archive.subsquid.io/graphql",
+  "specVersions": "https://calamari.archive.subsquid.io/graphql",
   "events": [
-    "Balances.Transfer"
+    "ParachainStaking.NewRound",
+    "ParachainStaking.JoinedCollatorCandidates",
+    "ParachainStaking.CollatorChosen",
+    "ParachainStaking.CandidateBondLessRequested",
+    "ParachainStaking.CandidateBondedMore",
+    "ParachainStaking.CandidateBondedLess",
+    "ParachainStaking.CandidateWentOffline",
+    "ParachainStaking.CandidateBackOnline",
+    "ParachainStaking.CandidateScheduledExit",
+    "ParachainStaking.CancelledCandidateExit",
+    "ParachainStaking.CancelledCandidateBondLess",
+    "ParachainStaking.CandidateLeft",
+    "ParachainStaking.DelegationDecreaseScheduled",
+    "ParachainStaking.DelegationIncreased",
+    "ParachainStaking.DelegationDecreased",
+    "ParachainStaking.DelegatorExitScheduled",
+    "ParachainStaking.DelegationRevocationScheduled",
+    "ParachainStaking.DelegatorLeft",
+    "ParachainStaking.DelegationRevoked",
+    "ParachainStaking.DelegationKicked",
+    "ParachainStaking.DelegatorExitCancelled",
+    "ParachainStaking.CancelledDelegationRequest",
+    "ParachainStaking.Delegation",
+    "ParachainStaking.DelegatorLeftCandidate",
+    "ParachainStaking.Rewarded"
   ],
-  "calls": [ 
+  "calls": [
   ],
   "storage": [
+    "ParachainStaking.Total",
+    "ParachainStaking.DelegatorState",
+    "ParachainStaking.CandidateInfo"
   ]
 }

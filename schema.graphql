@@ -1,17 +1,36 @@
-type Account @entity {
+type DelagatorAccount @entity {
   "Account address"
   id: ID!
-  transfersTo: [Transfer!] @derivedFrom(field: "to")
-  transfersFrom: [Transfer!] @derivedFrom(field: "from")
+  delegations: [Bond!]
+  totalStaked: BigInt!
+  status: String!,
 }
 
-type Transfer @entity {
+type Bond {
+  owner: String!
+  amount: BigInt!
+}
+
+type CollatorAccount @entity {
+  "Account address"
   id: ID!
-  blockNumber: Int! @index
+  selfBond: BigInt!
+  delegationCount: Int!
+  totalBond: BigInt!
+}
+
+type ChainState @entity {
+  id: ID!
+  delagatorCount: Int!
+  activeCollatorCount: Int!
   timestamp: DateTime! @index
-  extrinsicHash: String @index
-  from: Account!
-  to: Account!
-  amount: BigInt! @index
-  fee: BigInt! # fee is calculated at the best effort and may be zero for some old extrinsics
+  blockNumber: Int! @index
+}
+
+type EndOfRound @entity {
+  id: ID!
+  stakingRewards: BigInt!
+  collatingRewards: BigInt!
+  timestamp: DateTime! @index
+  blockNumber: Int! @index
 }
