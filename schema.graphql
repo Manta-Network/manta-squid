@@ -3,7 +3,7 @@ type DelagatorAccount @entity {
   id: ID!
   delegations: [Bond!]
   totalStaked: BigInt!
-  status: String!,
+  updatedAtBlock: Int!
 }
 
 type Bond {
@@ -17,6 +17,7 @@ type CollatorAccount @entity {
   selfBond: BigInt!
   delegationCount: Int!
   totalBond: BigInt!
+  updatedAtBlock: Int!
 }
 
 type ChainState @entity {

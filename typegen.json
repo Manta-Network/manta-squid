@@ -33,6 +33,7 @@
   "storage": [
     "ParachainStaking.Total",
     "ParachainStaking.DelegatorState",
-    "ParachainStaking.CandidateInfo"
+    "ParachainStaking.CandidateInfo",
+    "ParachainStaking.SelectedCandidates"
   ]
 }

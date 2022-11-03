@@ -92,6 +92,41 @@ export class ParachainStakingDelegatorStateStorage {
   }
 }
 
+export class ParachainStakingSelectedCandidatesStorage {
+  private readonly _chain: Chain
+  private readonly blockHash: string
+
+  constructor(ctx: BlockContext)
+  constructor(ctx: ChainContext, block: Block)
+  constructor(ctx: BlockContext, block?: Block) {
+    block = block || ctx.block
+    this.blockHash = block.hash
+    this._chain = ctx._chain
+  }
+
+  /**
+   *  The collator candidates selected for the current round
+   */
+  get isV3402() {
+    return this._chain.getStorageItemTypeHash('ParachainStaking', 'SelectedCandidates') === 'f5df25eadcdffaa0d2a68b199d671d3921ca36a7b70d22d57506dca52b4b5895'
+  }
+
+  /**
+   *  The collator candidates selected for the current round
+   */
+  async getAsV3402(): Promise<Uint8Array[]> {
+    assert(this.isV3402)
+    return this._chain.getStorage(this.blockHash, 'ParachainStaking', 'SelectedCandidates')
+  }
+
+  /**
+   * Checks whether the storage item is defined for the current chain version.
+   */
+  get isExists(): boolean {
+    return this._chain.getStorageItemTypeHash('ParachainStaking', 'SelectedCandidates') != null
+  }
+}
+
 export class ParachainStakingTotalStorage {
   private readonly _chain: Chain
   private readonly blockHash: string
