@@ -1,8 +1,23 @@
-import {lookupArchive} from "@subsquid/archive-registry"
-import * as ss58 from "@subsquid/ss58"
-import {BatchContext, BatchProcessorItem, BatchProcessorEventItem, SubstrateBatchProcessor} from "@subsquid/substrate-processor"
-import {Store, TypeormDatabase} from "@subsquid/typeorm-store"
-
+import {lookupArchive} from "@subsquid/archive-registry";
+import * as ss58 from "@subsquid/ss58";
+import {BatchContext, BatchProcessorItem, BatchProcessorEventItem, SubstrateBatchProcessor, toHex} from "@subsquid/substrate-processor";
+import {Store, TypeormDatabase} from "@subsquid/typeorm-store";
+import { ChainContext, Event } from "./types/support";
+import {
+  ParachainStakingDelegationDecreaseScheduledEvent,
+  ParachainStakingDelegationIncreasedEvent,
+  ParachainStakingDelegationDecreasedEvent,
+  ParachainStakingDelegatorExitScheduledEvent,
+  ParachainStakingDelegationRevocationScheduledEvent,
+  ParachainStakingDelegatorLeftEvent,
+  ParachainStakingDelegationRevokedEvent,
+  ParachainStakingDelegationKickedEvent,
+  ParachainStakingDelegatorExitCancelledEvent,
+  ParachainStakingCancelledDelegationRequestEvent,
+  ParachainStakingDelegationEvent,
+  ParachainStakingDelegatorLeftCandidateEvent,
+  ParachainStakingRewardedEvent
+} from "./types/events";
 
 const processor = new SubstrateBatchProcessor()
   .setDataSource({
@@ -96,5 +111,244 @@ type EventItem = BatchProcessorEventItem<typeof processor>;
 type Context = BatchContext<Store, Item>;
 
 async function processStaking(ctx: Context): Promise<void> {
-  const delagatorsIdsHex = new Set<string>();
+  const delegatorsIdsHex = new Set<string>();
+  const collatorIdsHex = new Set<string>();
+
+  for (const block of ctx.blocks) {
+    for (const item of block.items) {
+      if (item.kind == "event") {
+        processStakingEvents(ctx, item, delegatorsIdsHex, collatorIdsHex)
+      }
+    }
+  }
+}
+
+function processStakingEvents(
+  ctx: Context,
+  item: EventItem,
+  delegatorAccountIds: Set<string>,
+  collatorAccountIds: Set<string>
+) {
+  switch (item.name) {
+    case "ParachainStaking.DelegationDecreaseScheduled": {
+      const accounts = getDelegationDecreaseScheduled(ctx, item.event);
+      delegatorAccountIds.add(accounts.delegator);
+      collatorAccountIds.add(accounts.collator);
+      break;
+    }
+    case "ParachainStaking.DelegationIncreased": {
+      const accounts = getDelegationIncreased(ctx, item.event);
+      delegatorAccountIds.add(accounts.delegator);
+      collatorAccountIds.add(accounts.collator);
+      break
+    }
+    case "ParachainStaking.DelegationDecreased": {
+      const accounts = getDelegationDecreased(ctx, item.event);
+      delegatorAccountIds.add(accounts.delegator);
+      collatorAccountIds.add(accounts.collator);
+      break;
+    }
+    case "ParachainStaking.DelegatorExitScheduled": {
+      const account = getDelegatorExitScheduled(ctx, item.event);
+
+      delegatorAccountIds.add(account.delegator);
+      break;
+    }
+    case "ParachainStaking.DelegationRevocationScheduled": {
+      const accounts = getDelegationRevocationScheduled(ctx, item.event);
+
+      delegatorAccountIds.add(accounts.delegator);
+      collatorAccountIds.add(accounts.collator);
+      break;
+    }
+    case "ParachainStaking.DelegatorLeft": {
+      const accounts = getDelegatorLeft(ctx, item.event);
+
+      delegatorAccountIds.add(accounts.delegator);
+      break;
+    }
+    case "ParachainStaking.DelegationRevoked": {
+      const accounts = getDelegationRevoked(ctx, item.event)
+
+      delegatorAccountIds.add(accounts.delegator);
+      collatorAccountIds.add(accounts.collator);
+      break;
+    }
+    case "ParachainStaking.DelegationKicked": {
+      const accounts = getDelegationKicked(ctx, item.event)
+
+      delegatorAccountIds.add(accounts.delegator);
+      collatorAccountIds.add(accounts.collator);
+      break;
+    }
+    case "ParachainStaking.DelegationKicked": {
+      const account = getDelegatorExitCancelled(ctx, item.event)
+
+      delegatorAccountIds.add(account.delegator);
+      break;
+    }
+    case "ParachainStaking.CancelledDelegationRequest": {
+      const accounts = getCancelledDelegationRequest(ctx, item.event)
+
+      delegatorAccountIds.add(accounts.delegator);
+      collatorAccountIds.add(accounts.collator);
+      break;
+    }
+    case "ParachainStaking.Delegation": {
+      const accounts = getDelegation(ctx, item.event)
+
+      delegatorAccountIds.add(accounts.delegator);
+      collatorAccountIds.add(accounts.collator);
+      break;
+    }
+    case "ParachainStaking.DelegatorLeftCandidate": {
+      const accounts = getDelegatorLeftCandidate(ctx, item.event)
+
+      delegatorAccountIds.add(accounts.delegator);
+      collatorAccountIds.add(accounts.collator);
+      break;
+    }
+    case "ParachainStaking.Rewarded": {
+      const account = getRewarded(ctx, item.event)
+
+      delegatorAccountIds.add(account.account);
+      break;
+    }
+  }
+}
+
+function getDelegationDecreaseScheduled(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegationDecreaseScheduledEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)};
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getDelegationIncreased(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegationIncreasedEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)};
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getDelegationDecreased(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegationDecreasedEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getDelegatorExitScheduled(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegatorExitScheduledEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getDelegationRevocationScheduled(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegationRevocationScheduledEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getDelegatorLeft(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegatorLeftEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getDelegationRevoked(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegationRevokedEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getDelegationKicked(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegationKickedEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getDelegatorExitCancelled(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegatorExitCancelledEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCancelledDelegationRequest(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCancelledDelegationRequestEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.collator)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getDelegation(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegationEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getDelegatorLeftCandidate(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingDelegatorLeftCandidateEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getRewarded(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingRewardedEvent(ctx, event);
+
+  if (data.isV3402) {
+    return {account: toHex(data.asV3402.account)}
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+export class UnknownVersionError extends Error {
+  constructor(name: string) {
+    super(`There is no relevant version for ${name}`);
+  }
 }
