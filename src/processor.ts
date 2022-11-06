@@ -112,8 +112,8 @@ async function processBalances(ctx: Context): Promise<void> {
   const block = ctx.blocks[ctx.blocks.length - 1];
   const accountIdsU8 = [...accountIdsHex].map((id) => decodeHex(id));
 
-  await saveRegularChainState(ctx, block.header, false);
   await saveAccounts(ctx, block.header, accountIdsU8);
+  await saveRegularChainState(ctx, block.header, false);
 }
 
 function processBalancesEventItem(
