@@ -1,8 +1,10 @@
 import {lookupArchive} from "@subsquid/archive-registry";
 import * as ss58 from "@subsquid/ss58";
-import {BatchContext, BatchProcessorItem, BatchProcessorEventItem, SubstrateBatchProcessor, toHex} from "@subsquid/substrate-processor";
+import {BatchContext, BatchProcessorItem, BatchProcessorEventItem, SubstrateBatchProcessor, toHex, decodeHex, SubstrateBlock} from "@subsquid/substrate-processor";
 import {Store, TypeormDatabase} from "@subsquid/typeorm-store";
-import { ChainContext, Event } from "./types/support";
+import { Block, ChainContext, Event } from "./types/support";
+import { ParachainStakingDelegatorStateStorage, ParachainStakingTotalStorage, ParachainStakingSelectedCandidatesStorage } from "./types/storage";
+import { Delegator } from "./types/v3402";
 import {
   ParachainStakingDelegationDecreaseScheduledEvent,
   ParachainStakingDelegationIncreasedEvent,
@@ -18,6 +20,8 @@ import {
   ParachainStakingDelegatorLeftCandidateEvent,
   ParachainStakingRewardedEvent
 } from "./types/events";
+import { ChainState, DelegatorAccount, DelegationBond, CollatorAccount } from "./model";
+import { Chain } from "@subsquid/substrate-processor/lib/chain";
 
 const processor = new SubstrateBatchProcessor()
   .setDataSource({
@@ -26,7 +30,7 @@ const processor = new SubstrateBatchProcessor()
     chain: "wss://ws.archive.calamari.systems",
   })
   // Don't care until staking went live past block 2_000_000
-  .setBlockRange({ from: 2_000_000 })
+  .setBlockRange({ from: 2_183_941 })
   .addEvent("ParachainStaking.NewRound", {
     data: { event: { args: true } },
   } as const)
@@ -110,6 +114,20 @@ type Item = BatchProcessorItem<typeof processor>;
 type EventItem = BatchProcessorEventItem<typeof processor>;
 type Context = BatchContext<Store, Item>;
 
+// Save period for data points
+// 2 hours
+const SAVE_PERIOD = 2 * 60 * 60 * 1000;
+let lastStateTimestamp: number | undefined;
+
+async function getLastChainState(store: Store) {
+  return await store.get(ChainState, {
+    where: {},
+    order: {
+      timestamp: "DESC",
+    },
+  });
+}
+
 async function processStaking(ctx: Context): Promise<void> {
   const delegatorsIdsHex = new Set<string>();
   const collatorIdsHex = new Set<string>();
@@ -120,6 +138,83 @@ async function processStaking(ctx: Context): Promise<void> {
         processStakingEvents(ctx, item, delegatorsIdsHex, collatorIdsHex)
       }
     }
+
+    if (lastStateTimestamp == null) {
+      lastStateTimestamp =
+        (await getLastChainState(ctx.store))?.timestamp.getTime() || 0;
+    }
+
+    if (block.header.timestamp - lastStateTimestamp >= SAVE_PERIOD) {
+      const delegatorIdsU8 = [...delegatorsIdsHex].map((id) => decodeHex(id));
+      const collatorIdsU8 = [...collatorIdsHex].map((id) => decodeHex(id));
+
+      await saveDelegatorAccounts(ctx, block.header, delegatorIdsU8);
+      await saveChainState(ctx, block.header, true);
+
+      lastStateTimestamp = block.header.timestamp;
+      delegatorsIdsHex.clear();
+      collatorIdsHex.clear();
+    }
+  }
+
+  const block = ctx.blocks[ctx.blocks.length - 1];
+  const delegatorsIdsU8 = [...delegatorsIdsHex].map((id) => decodeHex(id));
+
+  await saveDelegatorAccounts(ctx, block.header, delegatorsIdsU8);
+  await saveChainState(ctx, block.header, false);
+}
+
+async function saveDelegatorAccounts(
+  ctx: Context,
+  block: SubstrateBlock,
+  accountIds: Uint8Array[]
+) {
+  const delegatorInfo = await getDelegatorState(ctx, block, accountIds);
+  if (!delegatorInfo) {
+    ctx.log.warn("No delegator changes");
+    return;
+  }
+
+  const delegatorAccounts = new Map<string, DelegatorAccount>();
+  const delegatorDeletions = new Map<string, DelegatorAccount>();
+
+  for (const delegator of delegatorInfo) {
+    if (!delegator) continue;
+    const id = encodeId(delegator.accountId);
+
+    if (delegator.total > 0n) {
+      delegatorAccounts.set(
+        id,
+        new DelegatorAccount({
+          id,
+          totalStaked: delegator.total,
+          delegations: delegator.delegations,
+          updatedAtBlock: block.height,
+        })
+      );
+    } else {
+      delegatorDeletions.set(id, new DelegatorAccount({ id }));
+    }
+  }
+
+  await ctx.store.save([...delegatorAccounts.values()]);
+  await ctx.store.remove([...delegatorDeletions.values()]);
+
+  ctx.log
+    .child("accounts")
+    .info(`delegators updated: ${delegatorAccounts.size}, delegators deleted: ${delegatorDeletions.size}`);
+}
+
+async function getDelegatorState(ctx: ChainContext, block: Block, accounts: Uint8Array[]) {
+  const storage = new ParachainStakingDelegatorStateStorage(ctx, block);
+  if (!storage.isExists) return undefined;
+
+  if (storage.isV3402) {
+    const data = await storage.getManyAsV3402(accounts);
+    const filteredData = data.filter((d): d is Delegator => d !== undefined);
+    return filteredData.map((d) => ({ accountId: d.id, delegations: d.delegations.map((del) => new DelegationBond({owner: encodeId(del.owner), amount: del.amount})), total: d.total }));
+  } else {
+    return undefined;
   }
 }
 
@@ -347,8 +442,70 @@ function getRewarded(ctx: ChainContext, event: Event) {
   }
 }
 
+async function saveChainState(
+  ctx: Context,
+  block: SubstrateBlock,
+  isSave: boolean,
+) {
+  const state = await getChainState(ctx, block, isSave);
+  await ctx.store.save(state);
+
+  if (isSave) {
+    ctx.log.child("state").info(`updated at block ${block.height}`);
+  }
+}
+
+async function getChainState(
+  ctx: Context,
+  block: SubstrateBlock,
+  isSave: boolean,
+) {
+  let state = new ChainState();
+
+  if (isSave) {
+    state = new ChainState({ id: block.id });
+  } else {
+    state = new ChainState({ id: "0" });
+  }
+
+  state.timestamp = new Date(block.timestamp);
+  state.blockNumber = block.height;
+  state.delegatorCount = await ctx.store.count(DelegatorAccount);
+  state.totalStaked = (await getTotalStaked(ctx, block)) || 0n;
+  state.activeCollatorCount = await getCollatorCount(ctx, block) || 0;
+
+  return state;
+}
+
+async function getTotalStaked(ctx: ChainContext, block: Block) {
+  const storage = new ParachainStakingTotalStorage(ctx, block);
+  if (!storage.isExists) return undefined;
+
+  if (storage.isV3402) {
+    return await storage.getAsV3402();
+  }
+
+  throw new UnknownVersionError(storage.constructor.name);
+}
+
+async function getCollatorCount(ctx: ChainContext, block: Block) {
+  const storage = new ParachainStakingSelectedCandidatesStorage(ctx, block);
+  if (!storage.isExists) return undefined;
+
+  if (storage.isV3402) {
+    const collators = await storage.getAsV3402();
+    return collators.length
+  }
+
+  throw new UnknownVersionError(storage.constructor.name);
+}
+
 export class UnknownVersionError extends Error {
   constructor(name: string) {
     super(`There is no relevant version for ${name}`);
   }
+}
+
+export function encodeId(id: Uint8Array) {
+  return ss58.codec("calamari").encode(id);
 }

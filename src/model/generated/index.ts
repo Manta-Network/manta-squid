@@ -1,5 +1,5 @@
-export * from "./delagatorAccount.model"
-export * from "./_bond"
+export * from "./delegatorAccount.model"
+export * from "./_delegationBond"
 export * from "./collatorAccount.model"
 export * from "./chainState.model"
 export * from "./endOfRound.model"

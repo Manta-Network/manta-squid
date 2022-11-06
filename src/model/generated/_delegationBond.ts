@@ -1,11 +1,11 @@
 import assert from "assert"
 import * as marshal from "./marshal"
 
-export class Bond {
+export class DelegationBond {
   private _owner!: string
   private _amount!: bigint
 
-  constructor(props?: Partial<Omit<Bond, 'toJSON'>>, json?: any) {
+  constructor(props?: Partial<Omit<DelegationBond, 'toJSON'>>, json?: any) {
     Object.assign(this, props)
     if (json != null) {
       this._owner = marshal.string.fromJSON(json.owner)

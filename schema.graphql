@@ -1,12 +1,12 @@
-type DelagatorAccount @entity {
+type DelegatorAccount @entity {
   "Account address"
   id: ID!
-  delegations: [Bond!]
+  delegations: [DelegationBond!]
   totalStaked: BigInt!
   updatedAtBlock: Int!
 }
 
-type Bond {
+type DelegationBond {
   owner: String!
   amount: BigInt!
 }
@@ -22,8 +22,9 @@ type CollatorAccount @entity {
 
 type ChainState @entity {
   id: ID!
-  delagatorCount: Int!
+  delegatorCount: Int!
   activeCollatorCount: Int!
+  totalStaked: BigInt!
   timestamp: DateTime! @index
   blockNumber: Int! @index
 }

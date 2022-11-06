@@ -21,4 +21,7 @@ export class CollatorAccount {
 
   @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
   totalBond!: bigint
+
+  @Column_("int4", {nullable: false})
+  updatedAtBlock!: number
 }
