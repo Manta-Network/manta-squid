@@ -7,5 +7,6 @@ scripts
 archive
 FAQ.md
 README.md
+squid.yaml
 src/model
 src/types

@@ -28,8 +28,7 @@
     "ParachainStaking.DelegatorLeftCandidate",
     "ParachainStaking.Rewarded"
   ],
-  "calls": [
-  ],
+  "calls": [],
   "storage": [
     "ParachainStaking.Total",
     "ParachainStaking.DelegatorState",

@@ -1,11 +1,35 @@
-import {lookupArchive} from "@subsquid/archive-registry";
+import { lookupArchive } from "@subsquid/archive-registry";
 import * as ss58 from "@subsquid/ss58";
-import {BatchContext, BatchProcessorItem, BatchProcessorEventItem, SubstrateBatchProcessor, toHex, decodeHex, SubstrateBlock} from "@subsquid/substrate-processor";
-import {Store, TypeormDatabase} from "@subsquid/typeorm-store";
-import { Block, ChainContext, Event } from "./types/support";
-import { ParachainStakingDelegatorStateStorage, ParachainStakingTotalStorage, ParachainStakingSelectedCandidatesStorage } from "./types/storage";
-import { Delegator } from "./types/v3402";
 import {
+  BatchContext,
+  BatchProcessorItem,
+  BatchProcessorEventItem,
+  SubstrateBatchProcessor,
+  toHex,
+  decodeHex,
+  SubstrateBlock,
+} from "@subsquid/substrate-processor";
+import { Store, TypeormDatabase } from "@subsquid/typeorm-store";
+import { Block, ChainContext, Event } from "./types/support";
+import {
+  ParachainStakingDelegatorStateStorage,
+  ParachainStakingTotalStorage,
+  ParachainStakingSelectedCandidatesStorage,
+  ParachainStakingCandidateInfoStorage,
+} from "./types/storage";
+import { Delegator, CandidateMetadata } from "./types/v3402";
+import {
+  ParachainStakingJoinedCollatorCandidatesEvent,
+  ParachainStakingCollatorChosenEvent,
+  ParachainStakingCandidateBondLessRequestedEvent,
+  ParachainStakingCandidateBondedMoreEvent,
+  ParachainStakingCandidateBondedLessEvent,
+  ParachainStakingCandidateWentOfflineEvent,
+  ParachainStakingCandidateBackOnlineEvent,
+  ParachainStakingCandidateScheduledExitEvent,
+  ParachainStakingCancelledCandidateExitEvent,
+  ParachainStakingCancelledCandidateBondLessEvent,
+  ParachainStakingCandidateLeftEvent,
   ParachainStakingDelegationDecreaseScheduledEvent,
   ParachainStakingDelegationIncreasedEvent,
   ParachainStakingDelegationDecreasedEvent,
@@ -18,10 +42,14 @@ import {
   ParachainStakingCancelledDelegationRequestEvent,
   ParachainStakingDelegationEvent,
   ParachainStakingDelegatorLeftCandidateEvent,
-  ParachainStakingRewardedEvent
+  ParachainStakingRewardedEvent,
 } from "./types/events";
-import { ChainState, DelegatorAccount, DelegationBond, CollatorAccount } from "./model";
-import { Chain } from "@subsquid/substrate-processor/lib/chain";
+import {
+  ChainState,
+  DelegatorAccount,
+  DelegationBond,
+  CollatorAccount,
+} from "./model";
 
 const processor = new SubstrateBatchProcessor()
   .setDataSource({
@@ -106,7 +134,7 @@ const processor = new SubstrateBatchProcessor()
   .addEvent("ParachainStaking.Rewarded", {
     data: { event: { args: true } },
   } as const)
-  .includeAllBlocks()
+  .includeAllBlocks();
 
 processor.run(new TypeormDatabase(), processStaking);
 
@@ -135,7 +163,7 @@ async function processStaking(ctx: Context): Promise<void> {
   for (const block of ctx.blocks) {
     for (const item of block.items) {
       if (item.kind == "event") {
-        processStakingEvents(ctx, item, delegatorsIdsHex, collatorIdsHex)
+        processStakingEvents(ctx, item, delegatorsIdsHex, collatorIdsHex);
       }
     }
 
@@ -149,6 +177,7 @@ async function processStaking(ctx: Context): Promise<void> {
       const collatorIdsU8 = [...collatorIdsHex].map((id) => decodeHex(id));
 
       await saveDelegatorAccounts(ctx, block.header, delegatorIdsU8);
+      await saveCollatorAccounts(ctx, block.header, collatorIdsU8);
       await saveChainState(ctx, block.header, true);
 
       lastStateTimestamp = block.header.timestamp;
@@ -159,8 +188,10 @@ async function processStaking(ctx: Context): Promise<void> {
 
   const block = ctx.blocks[ctx.blocks.length - 1];
   const delegatorsIdsU8 = [...delegatorsIdsHex].map((id) => decodeHex(id));
+  const collatorIdsU8 = [...collatorIdsHex].map((id) => decodeHex(id));
 
   await saveDelegatorAccounts(ctx, block.header, delegatorsIdsU8);
+  await saveCollatorAccounts(ctx, block.header, collatorIdsU8);
   await saveChainState(ctx, block.header, false);
 }
 
@@ -201,18 +232,104 @@ async function saveDelegatorAccounts(
   await ctx.store.remove([...delegatorDeletions.values()]);
 
   ctx.log
-    .child("accounts")
-    .info(`delegators updated: ${delegatorAccounts.size}, delegators deleted: ${delegatorDeletions.size}`);
+    .child("delegator accounts")
+    .info(
+      `delegators updated: ${delegatorAccounts.size}, delegators deleted: ${delegatorDeletions.size}`
+    );
 }
 
-async function getDelegatorState(ctx: ChainContext, block: Block, accounts: Uint8Array[]) {
+async function getDelegatorState(
+  ctx: ChainContext,
+  block: Block,
+  accounts: Uint8Array[]
+) {
   const storage = new ParachainStakingDelegatorStateStorage(ctx, block);
   if (!storage.isExists) return undefined;
 
   if (storage.isV3402) {
     const data = await storage.getManyAsV3402(accounts);
     const filteredData = data.filter((d): d is Delegator => d !== undefined);
-    return filteredData.map((d) => ({ accountId: d.id, delegations: d.delegations.map((del) => new DelegationBond({owner: encodeId(del.owner), amount: del.amount})), total: d.total }));
+    return filteredData.map((d) => ({
+      accountId: d.id,
+      delegations: d.delegations.map(
+        (del) =>
+          new DelegationBond({ owner: encodeId(del.owner), amount: del.amount })
+      ),
+      total: d.total,
+    }));
+  } else {
+    return undefined;
+  }
+}
+
+async function saveCollatorAccounts(
+  ctx: Context,
+  block: SubstrateBlock,
+  accountIds: Uint8Array[]
+) {
+  const collatorInfo = await getCollatorState(ctx, block, accountIds);
+  if (!collatorInfo) {
+    ctx.log.warn("No delegator changes");
+    return;
+  }
+
+  const collatorAccounts = new Map<string, CollatorAccount>();
+  const collatorDeletions = new Map<string, CollatorAccount>();
+
+  for (const collator of collatorInfo) {
+    if (!collator) continue;
+    const id = encodeId(collator.accountId);
+
+    if (collator.total > 0n) {
+      collatorAccounts.set(
+        id,
+        new CollatorAccount({
+          id,
+          totalBond: collator.total,
+          selfBond: collator.selfBond,
+          delegationCount: collator.delegationCount,
+          updatedAtBlock: block.height,
+        })
+      );
+    } else {
+      collatorDeletions.set(id, new CollatorAccount({ id }));
+    }
+  }
+
+  await ctx.store.save([...collatorAccounts.values()]);
+  await ctx.store.remove([...collatorDeletions.values()]);
+
+  ctx.log
+    .child("collator accounts")
+    .info(
+      `collators updated: ${collatorAccounts.size}, collator deleted: ${collatorDeletions.size}`
+    );
+}
+
+async function getCollatorState(
+  ctx: ChainContext,
+  block: Block,
+  accounts: Uint8Array[]
+) {
+  const storage = new ParachainStakingCandidateInfoStorage(ctx, block);
+  if (!storage.isExists) return undefined;
+
+  if (storage.isV3402) {
+    const data = await storage.getManyAsV3402(accounts);
+    const dataWithAccountId = data.map((d, index) => ({
+      account: accounts[index],
+      metadata: d,
+    }));
+    const filteredData = dataWithAccountId.filter(
+      (data): data is { account: Uint8Array; metadata: CandidateMetadata } =>
+        data.metadata !== undefined
+    );
+    return filteredData.map((d) => ({
+      accountId: d.account,
+      selfBond: d.metadata.bond,
+      delegationCount: d.metadata.delegationCount,
+      total: d.metadata.totalCounted,
+    }));
   } else {
     return undefined;
   }
@@ -225,6 +342,61 @@ function processStakingEvents(
   collatorAccountIds: Set<string>
 ) {
   switch (item.name) {
+    case "ParachainStaking.JoinedCollatorCandidates": {
+      const account = getJoinedCollatorCandidates(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
+    case "ParachainStaking.CollatorChosen": {
+      const account = getCollatorChosen(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
+    case "ParachainStaking.CandidateBondLessRequested": {
+      const account = getCandidateBondedLessRequested(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
+    case "ParachainStaking.CandidateBondedMore": {
+      const account = getCandidateBondedMore(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
+    case "ParachainStaking.CandidateBondedLess": {
+      const account = getCandidateBondedLess(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
+    case "ParachainStaking.CandidateWentOffline": {
+      const account = getCandidateWentOffline(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
+    case "ParachainStaking.CandidateBackOnline": {
+      const account = getCandidateBackOnline(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
+    case "ParachainStaking.CandidateScheduledExit": {
+      const account = getCandidateScheduledExit(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
+    case "ParachainStaking.CancelledCandidateExit": {
+      const account = getCancelledCandidateExit(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
+    case "ParachainStaking.CancelledCandidateBondLess": {
+      const account = getCancelledCandidateBondLess(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
+    case "ParachainStaking.CandidateLeft": {
+      const account = getCandidateLeft(ctx, item.event);
+      collatorAccountIds.add(account);
+      break;
+    }
     case "ParachainStaking.DelegationDecreaseScheduled": {
       const accounts = getDelegationDecreaseScheduled(ctx, item.event);
       delegatorAccountIds.add(accounts.delegator);
@@ -235,7 +407,7 @@ function processStakingEvents(
       const accounts = getDelegationIncreased(ctx, item.event);
       delegatorAccountIds.add(accounts.delegator);
       collatorAccountIds.add(accounts.collator);
-      break
+      break;
     }
     case "ParachainStaking.DelegationDecreased": {
       const accounts = getDelegationDecreased(ctx, item.event);
@@ -263,48 +435,48 @@ function processStakingEvents(
       break;
     }
     case "ParachainStaking.DelegationRevoked": {
-      const accounts = getDelegationRevoked(ctx, item.event)
+      const accounts = getDelegationRevoked(ctx, item.event);
 
       delegatorAccountIds.add(accounts.delegator);
       collatorAccountIds.add(accounts.collator);
       break;
     }
     case "ParachainStaking.DelegationKicked": {
-      const accounts = getDelegationKicked(ctx, item.event)
+      const accounts = getDelegationKicked(ctx, item.event);
 
       delegatorAccountIds.add(accounts.delegator);
       collatorAccountIds.add(accounts.collator);
       break;
     }
     case "ParachainStaking.DelegationKicked": {
-      const account = getDelegatorExitCancelled(ctx, item.event)
+      const account = getDelegatorExitCancelled(ctx, item.event);
 
       delegatorAccountIds.add(account.delegator);
       break;
     }
     case "ParachainStaking.CancelledDelegationRequest": {
-      const accounts = getCancelledDelegationRequest(ctx, item.event)
+      const accounts = getCancelledDelegationRequest(ctx, item.event);
 
       delegatorAccountIds.add(accounts.delegator);
       collatorAccountIds.add(accounts.collator);
       break;
     }
     case "ParachainStaking.Delegation": {
-      const accounts = getDelegation(ctx, item.event)
+      const accounts = getDelegation(ctx, item.event);
 
       delegatorAccountIds.add(accounts.delegator);
       collatorAccountIds.add(accounts.collator);
       break;
     }
     case "ParachainStaking.DelegatorLeftCandidate": {
-      const accounts = getDelegatorLeftCandidate(ctx, item.event)
+      const accounts = getDelegatorLeftCandidate(ctx, item.event);
 
       delegatorAccountIds.add(accounts.delegator);
       collatorAccountIds.add(accounts.collator);
       break;
     }
     case "ParachainStaking.Rewarded": {
-      const account = getRewarded(ctx, item.event)
+      const account = getRewarded(ctx, item.event);
 
       delegatorAccountIds.add(account.account);
       break;
@@ -312,11 +484,124 @@ function processStakingEvents(
   }
 }
 
+function getJoinedCollatorCandidates(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingJoinedCollatorCandidatesEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.account);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCollatorChosen(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCollatorChosenEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.collatorAccount);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCandidateBondedLessRequested(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCandidateBondLessRequestedEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.candidate);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCandidateBondedMore(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCandidateBondedMoreEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.candidate);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCandidateBondedLess(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCandidateBondedLessEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.candidate);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCandidateWentOffline(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCandidateWentOfflineEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.candidate);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCandidateBackOnline(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCandidateBackOnlineEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.candidate);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCandidateScheduledExit(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCandidateScheduledExitEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.candidate);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCancelledCandidateExit(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCancelledCandidateExitEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.candidate);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCancelledCandidateBondLess(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCancelledCandidateBondLessEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.candidate);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
+function getCandidateLeft(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingCandidateLeftEvent(ctx, event);
+
+  if (data.isV3402) {
+    return toHex(data.asV3402.exCandidate);
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
+  }
+}
+
 function getDelegationDecreaseScheduled(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingDelegationDecreaseScheduledEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)};
+    return {
+      delegator: toHex(data.asV3402.delegator),
+      collator: toHex(data.asV3402.candidate),
+    };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -326,7 +611,10 @@ function getDelegationIncreased(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingDelegationIncreasedEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)};
+    return {
+      delegator: toHex(data.asV3402.delegator),
+      collator: toHex(data.asV3402.candidate),
+    };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -336,7 +624,10 @@ function getDelegationDecreased(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingDelegationDecreasedEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+    return {
+      delegator: toHex(data.asV3402.delegator),
+      collator: toHex(data.asV3402.candidate),
+    };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -346,17 +637,23 @@ function getDelegatorExitScheduled(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingDelegatorExitScheduledEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator)}
+    return { delegator: toHex(data.asV3402.delegator) };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
 }
 
 function getDelegationRevocationScheduled(ctx: ChainContext, event: Event) {
-  const data = new ParachainStakingDelegationRevocationScheduledEvent(ctx, event);
+  const data = new ParachainStakingDelegationRevocationScheduledEvent(
+    ctx,
+    event
+  );
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+    return {
+      delegator: toHex(data.asV3402.delegator),
+      collator: toHex(data.asV3402.candidate),
+    };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -366,7 +663,7 @@ function getDelegatorLeft(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingDelegatorLeftEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator)}
+    return { delegator: toHex(data.asV3402.delegator) };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -376,7 +673,10 @@ function getDelegationRevoked(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingDelegationRevokedEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+    return {
+      delegator: toHex(data.asV3402.delegator),
+      collator: toHex(data.asV3402.candidate),
+    };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -386,7 +686,10 @@ function getDelegationKicked(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingDelegationKickedEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+    return {
+      delegator: toHex(data.asV3402.delegator),
+      collator: toHex(data.asV3402.candidate),
+    };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -396,7 +699,7 @@ function getDelegatorExitCancelled(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingDelegatorExitCancelledEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator)}
+    return { delegator: toHex(data.asV3402.delegator) };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -406,7 +709,10 @@ function getCancelledDelegationRequest(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingCancelledDelegationRequestEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.collator)}
+    return {
+      delegator: toHex(data.asV3402.delegator),
+      collator: toHex(data.asV3402.collator),
+    };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -416,7 +722,10 @@ function getDelegation(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingDelegationEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+    return {
+      delegator: toHex(data.asV3402.delegator),
+      collator: toHex(data.asV3402.candidate),
+    };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -426,7 +735,10 @@ function getDelegatorLeftCandidate(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingDelegatorLeftCandidateEvent(ctx, event);
 
   if (data.isV3402) {
-    return {delegator: toHex(data.asV3402.delegator), collator: toHex(data.asV3402.candidate)}
+    return {
+      delegator: toHex(data.asV3402.delegator),
+      collator: toHex(data.asV3402.candidate),
+    };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -436,7 +748,7 @@ function getRewarded(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingRewardedEvent(ctx, event);
 
   if (data.isV3402) {
-    return {account: toHex(data.asV3402.account)}
+    return { account: toHex(data.asV3402.account) };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -445,7 +757,7 @@ function getRewarded(ctx: ChainContext, event: Event) {
 async function saveChainState(
   ctx: Context,
   block: SubstrateBlock,
-  isSave: boolean,
+  isSave: boolean
 ) {
   const state = await getChainState(ctx, block, isSave);
   await ctx.store.save(state);
@@ -458,7 +770,7 @@ async function saveChainState(
 async function getChainState(
   ctx: Context,
   block: SubstrateBlock,
-  isSave: boolean,
+  isSave: boolean
 ) {
   let state = new ChainState();
 
@@ -472,7 +784,7 @@ async function getChainState(
   state.blockNumber = block.height;
   state.delegatorCount = await ctx.store.count(DelegatorAccount);
   state.totalStaked = (await getTotalStaked(ctx, block)) || 0n;
-  state.activeCollatorCount = await getCollatorCount(ctx, block) || 0;
+  state.activeCollatorCount = (await getCollatorCount(ctx, block)) || 0;
 
   return state;
 }
@@ -494,7 +806,7 @@ async function getCollatorCount(ctx: ChainContext, block: Block) {
 
   if (storage.isV3402) {
     const collators = await storage.getAsV3402();
-    return collators.length
+    return collators.length;
   }
 
   throw new UnknownVersionError(storage.constructor.name);
