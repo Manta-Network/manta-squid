@@ -4,7 +4,8 @@
   "packageRules": [
     {
       "matchPackagePatterns": ["^@subsquid/"],
-      "groupName": "@subsquid"
+      "groupName": "@subsquid",
+      "automerge": true
     }
   ]
 }
