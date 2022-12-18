@@ -43,12 +43,14 @@ import {
   ParachainStakingDelegationEvent,
   ParachainStakingDelegatorLeftCandidateEvent,
   ParachainStakingRewardedEvent,
+  ParachainStakingNewRoundEvent,
 } from "./types/events";
 import {
   ChainState,
   DelegatorAccount,
   DelegationBond,
   CollatorAccount,
+  EndOfRound,
 } from "./model";
 
 const processor = new SubstrateBatchProcessor()
@@ -146,6 +148,13 @@ type Context = BatchContext<Store, Item>;
 // 2 hours
 const SAVE_PERIOD = 2 * 60 * 60 * 1000;
 let lastStateTimestamp: number | undefined;
+let round = {
+  currentBlockNumber: 0,
+  currentRound: 0,
+  previousBlockNumber: 0,
+  changed: true,
+};
+let collators: Uint8Array[] | undefined = undefined;
 
 async function getLastChainState(store: Store) {
   return await store.get(ChainState, {
@@ -159,11 +168,39 @@ async function getLastChainState(store: Store) {
 async function processStaking(ctx: Context): Promise<void> {
   const delegatorsIdsHex = new Set<string>();
   const collatorIdsHex = new Set<string>();
+  let rewards = new Map<string, bigint>();
 
   for (const block of ctx.blocks) {
     for (const item of block.items) {
       if (item.kind == "event") {
-        processStakingEvents(ctx, item, delegatorsIdsHex, collatorIdsHex);
+        processStakingEvents(
+          ctx,
+          item,
+          delegatorsIdsHex,
+          collatorIdsHex,
+          rewards,
+          round
+        );
+      }
+
+      ctx.log.warn(`rewards ${rewards.size}`);
+      if (round.changed) {
+        let previousSize = 0;
+        if (rewards.size != previousSize) {
+          previousSize = rewards.size;
+        } else {
+          ctx.log
+            .child("round data")
+            .info(`Round ${round.currentRound - 1} complete!`);
+          round.changed = false;
+
+          if (collators !== undefined) {
+            ctx.log.warn(`roundData: ${round.currentBlockNumber}`);
+            await saveRoundData(ctx, collators, rewards, round);
+            rewards.clear();
+          }
+          collators = await getSelectedColators(ctx, block.header);
+        }
       }
     }
 
@@ -193,6 +230,41 @@ async function processStaking(ctx: Context): Promise<void> {
   await saveDelegatorAccounts(ctx, block.header, delegatorsIdsU8);
   await saveCollatorAccounts(ctx, block.header, collatorIdsU8);
   await saveChainState(ctx, block.header, false);
+}
+
+async function saveRoundData(
+  ctx: Context,
+  collators: Uint8Array[] | undefined,
+  rewards: Map<string, bigint>,
+  roundData: any
+) {
+  if (!collators) {
+    ctx.log.warn("collators are undefined");
+    return;
+  }
+  const collatorString = collators.map((x) => toHex(x));
+  let endData = undefined;
+
+  for (let [who, reward] of rewards) {
+    ctx.log.warn(`rewards: who: ${who}, reward: ${reward}`);
+    const isCollator = collatorString.includes(who);
+
+    if (isCollator) {
+      if (endData) {
+        await ctx.store.save(endData);
+      }
+      endData = new EndOfRound({
+        id: who,
+        blockNumber: roundData.previousBlockNumber,
+        roundNumber: roundData.currentData - 1,
+        stakingRewards: reward,
+      });
+    } else {
+      if (endData) {
+        endData.stakingRewards += reward;
+      }
+    }
+  }
 }
 
 async function saveDelegatorAccounts(
@@ -339,7 +411,9 @@ function processStakingEvents(
   ctx: Context,
   item: EventItem,
   delegatorAccountIds: Set<string>,
-  collatorAccountIds: Set<string>
+  collatorAccountIds: Set<string>,
+  rewards: Map<string, bigint>,
+  round: any
 ) {
   switch (item.name) {
     case "ParachainStaking.JoinedCollatorCandidates": {
@@ -476,11 +550,32 @@ function processStakingEvents(
       break;
     }
     case "ParachainStaking.Rewarded": {
-      const account = getRewarded(ctx, item.event);
+      const data = getRewarded(ctx, item.event);
 
-      delegatorAccountIds.add(account.account);
+      delegatorAccountIds.add(data.account);
+      rewards.set(data.account, data.amount);
       break;
     }
+    case "ParachainStaking.NewRound": {
+      const [blockNumber, roundNumber] = getNewRound(ctx, item.event);
+      round.previousBlockNumber = round.currentBlockNumber;
+      round.currentBlockNumber = blockNumber;
+      round.currentRound = roundNumber;
+      round.changed = true;
+      break;
+    }
+  }
+}
+
+function getNewRound(ctx: ChainContext, event: Event) {
+  const data = new ParachainStakingNewRoundEvent(ctx, event);
+
+  if (data.isV3402) {
+    const blockNumber = data.asV3402.startingBlock;
+    const roundNumber = data.asV3402.round;
+    return [blockNumber, roundNumber];
+  } else {
+    throw new UnknownVersionError(data.constructor.name);
   }
 }
 
@@ -748,7 +843,10 @@ function getRewarded(ctx: ChainContext, event: Event) {
   const data = new ParachainStakingRewardedEvent(ctx, event);
 
   if (data.isV3402) {
-    return { account: toHex(data.asV3402.account) };
+    return {
+      account: toHex(data.asV3402.account),
+      amount: data.asV3402.rewards,
+    };
   } else {
     throw new UnknownVersionError(data.constructor.name);
   }
@@ -787,6 +885,18 @@ async function getChainState(
   state.activeCollatorCount = (await getCollatorCount(ctx, block)) || 0;
 
   return state;
+}
+
+async function getSelectedColators(ctx: ChainContext, block: Block) {
+  const storage = new ParachainStakingSelectedCandidatesStorage(ctx, block);
+  if (!storage.isExists) return undefined;
+
+  if (storage.isV3402) {
+    const collators = await storage.getAsV3402();
+    return collators;
+  }
+
+  throw new UnknownVersionError(storage.constructor.name);
 }
 
 async function getTotalStaked(ctx: ChainContext, block: Block) {

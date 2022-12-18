@@ -32,7 +32,6 @@ type ChainState @entity {
 type EndOfRound @entity {
   id: ID!
   stakingRewards: BigInt!
-  collatingRewards: BigInt!
-  timestamp: DateTime! @index
+  roundNumber: Int! @index
   blockNumber: Int! @index
 }
