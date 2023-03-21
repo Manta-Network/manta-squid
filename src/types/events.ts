@@ -1,7 +1,8 @@
 import assert from 'assert'
 import {Chain, ChainContext, EventContext, Event, Result, Option} from './support'
+import * as v4010 from './v4010'
 
-export class BalancesTransferEvent {
+export class MantaPayPrivateTransferEvent {
     private readonly _chain: Chain
     private readonly event: Event
 
@@ -9,53 +10,81 @@ export class BalancesTransferEvent {
     constructor(ctx: ChainContext, event: Event)
     constructor(ctx: EventContext, event?: Event) {
         event = event || ctx.event
-        assert(event.name === 'Balances.Transfer')
+        assert(event.name === 'MantaPay.PrivateTransfer')
         this._chain = ctx._chain
         this.event = event
     }
 
     /**
-     *  Transfer succeeded (from, to, value, fees).
+     * Private Transfer Event
      */
-    get isV1020(): boolean {
-        return this._chain.getEventHash('Balances.Transfer') === '72e6f0d399a72f77551d560f52df25d757e0643d0192b3bc837cbd91b6f36b27'
+    get isV4010(): boolean {
+        return this._chain.getEventHash('MantaPay.PrivateTransfer') === 'ca987022f754c65252ff4e6f57644fa6c0770bf3ed1fcad8067fe5005983307b'
     }
 
     /**
-     *  Transfer succeeded (from, to, value, fees).
+     * Private Transfer Event
      */
-    get asV1020(): [Uint8Array, Uint8Array, bigint, bigint] {
-        assert(this.isV1020)
+    get asV4010(): {origin: (Uint8Array | undefined)} {
+        assert(this.isV4010)
         return this._chain.decodeEvent(this.event)
     }
+}
 
-    /**
-     *  Transfer succeeded (from, to, value).
-     */
-    get isV1050(): boolean {
-        return this._chain.getEventHash('Balances.Transfer') === 'dad2bcdca357505fa3c7832085d0db53ce6f902bd9f5b52823ee8791d351872c'
+export class MantaPayToPrivateEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'MantaPay.ToPrivate')
+        this._chain = ctx._chain
+        this.event = event
     }
 
     /**
-     *  Transfer succeeded (from, to, value).
+     * To Private Event
      */
-    get asV1050(): [Uint8Array, Uint8Array, bigint] {
-        assert(this.isV1050)
+    get isV4010(): boolean {
+        return this._chain.getEventHash('MantaPay.ToPrivate') === '84ff774e1f80d8a369b7c4e33922254632611e59d1217604cf1996ddac3dd324'
+    }
+
+    /**
+     * To Private Event
+     */
+    get asV4010(): {asset: v4010.Asset, source: Uint8Array} {
+        assert(this.isV4010)
         return this._chain.decodeEvent(this.event)
     }
+}
 
-    /**
-     * Transfer succeeded.
-     */
-    get isV9130(): boolean {
-        return this._chain.getEventHash('Balances.Transfer') === '0ffdf35c495114c2d42a8bf6c241483fd5334ca0198662e14480ad040f1e3a66'
+export class MantaPayToPublicEvent {
+    private readonly _chain: Chain
+    private readonly event: Event
+
+    constructor(ctx: EventContext)
+    constructor(ctx: ChainContext, event: Event)
+    constructor(ctx: EventContext, event?: Event) {
+        event = event || ctx.event
+        assert(event.name === 'MantaPay.ToPublic')
+        this._chain = ctx._chain
+        this.event = event
     }
 
     /**
-     * Transfer succeeded.
+     * To Public Event
      */
-    get asV9130(): {from: Uint8Array, to: Uint8Array, amount: bigint} {
-        assert(this.isV9130)
+    get isV4010(): boolean {
+        return this._chain.getEventHash('MantaPay.ToPublic') === '02ddc8ed4de5485f51712eaf4c7c7b7980120894154b17095f6bf37be70e2bd2'
+    }
+
+    /**
+     * To Public Event
+     */
+    get asV4010(): {asset: v4010.Asset, sink: Uint8Array} {
+        assert(this.isV4010)
         return this._chain.decodeEvent(this.event)
     }
 }

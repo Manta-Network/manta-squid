@@ -34,7 +34,7 @@ up:
 
 
 down:
-	@docker-compose down
+	@docker-compose down -v
 
 
 .PHONY: build serve process migrate codegen typegen up down
