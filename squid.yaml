@@ -1,8 +1,8 @@
 manifestVersion: subsquid.io/v0.1
-name: substrate-template
+name: manta-pay-calamari
 version: 1
 description: |-
-  The very first squid from manifest  
+  MantaPay indexing
 build:
 
 deploy:
