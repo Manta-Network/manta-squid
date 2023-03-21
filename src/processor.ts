@@ -44,35 +44,34 @@ async function processMantaPay(ctx: Context): Promise<void> {
               switch (item.name) {
                 case "MantaPay.PrivateTransfer": {
                     const privateTransfer = getPrivateTransfer(ctx, item.event);
-                    privateTransferList.push({
+                    privateTransferList.push(new PrivateTransfer({
                       id: item.event.id,
                       blockNumber: block.header.height,
                       timestamp: new Date(block.header.timestamp),
                       account: privateTransfer.origin,
-                    })
+                    }));
                     break;
                 }
                 case "MantaPay.ToPublic": {
                     const toPublic = getToPublic(ctx, item.event);
-                    toPublicList.push({
+                    toPublicList.push(new ToPublic({
                         id: item.event.id,
                         blockNumber: block.header.height,
                         timestamp: new Date(block.header.timestamp),
                         sink: toPublic.sink,
                         asset: toPublic.asset,
-
-                    })
+                    }));
                     break;
                 }
                 case "MantaPay.ToPrivate": {
                     const toPrivate = getToPrivate(ctx, item.event);
-                    toPrivateList.push({
+                    toPrivateList.push(new ToPrivate({
                       id: item.event.id,
                       blockNumber: block.header.height,
                       timestamp: new Date(block.header.timestamp),
                       source: toPrivate.source,
                       asset: toPrivate.asset,
-                    })
+                    }));
                     break;
                 }
              }
@@ -80,8 +79,8 @@ async function processMantaPay(ctx: Context): Promise<void> {
         }
     }
 
-    //await ctx.store.insert(toPrivateList);
-    //await ctx.store.insert(toPublicList);
+    await ctx.store.insert(toPrivateList);
+    await ctx.store.insert(toPublicList);
     await ctx.store.insert(privateTransferList);
 }
 
