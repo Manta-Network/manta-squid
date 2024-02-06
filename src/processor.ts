@@ -183,7 +183,7 @@ async function processStaking(ctx: Context): Promise<void> {
         );
       }
 
-      ctx.log.warn(`rewards ${rewards.size}`);
+      ctx.log.debug(`rewards ${rewards.size}`);
       if (round.changed) {
         let previousSize = 0;
         if (rewards.size != previousSize) {
@@ -195,7 +195,7 @@ async function processStaking(ctx: Context): Promise<void> {
           round.changed = false;
 
           if (collators !== undefined) {
-            ctx.log.warn(`roundData: ${round.currentBlockNumber}`);
+            ctx.log.info(`roundData: ${round.currentBlockNumber}`);
             await saveRoundData(ctx, collators, rewards, round);
             rewards.clear();
           }
@@ -246,7 +246,7 @@ async function saveRoundData(
   let endData = undefined;
 
   for (let [who, reward] of rewards) {
-    ctx.log.warn(`rewards: who: ${who}, reward: ${reward}`);
+    ctx.log.info(`rewards: who: ${who}, reward: ${reward}`);
     const isCollator = collatorString.includes(who);
 
     if (isCollator) {
@@ -274,7 +274,7 @@ async function saveDelegatorAccounts(
 ) {
   const delegatorInfo = await getDelegatorState(ctx, block, accountIds);
   if (!delegatorInfo) {
-    ctx.log.warn("No delegator changes");
+    ctx.log.debug("No delegator changes");
     return;
   }
 
@@ -341,7 +341,7 @@ async function saveCollatorAccounts(
 ) {
   const collatorInfo = await getCollatorState(ctx, block, accountIds);
   if (!collatorInfo) {
-    ctx.log.warn("No delegator changes");
+    ctx.log.debug("No delegator changes");
     return;
   }
 
